@@ -1,5 +1,5 @@
-import connectDb from "../../../../../lib/db";
-import User from "../../../../../models/user.model";
+import connectDb from "../../../../lib/db";
+import User from "../../../../models/user.model";
 import bcrypt from "bcryptjs";
 import { NextRequest, NextResponse } from "next/server";
 export async function POST(req: NextRequest) {
