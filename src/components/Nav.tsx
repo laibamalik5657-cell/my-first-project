@@ -14,13 +14,16 @@ import {
   ClipboardCheck, 
   LogOut, 
   Package, 
-  PlusCircle
+  PlusCircle,
+  X
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/redux/store';
+import mongoose from 'mongoose';
 
 interface IUser {
+  _id?: mongoose.Types.ObjectId;
   name: string;
   email: string;
   password?: string;
@@ -69,7 +72,7 @@ export default function Nav({ user }: { user: IUser }) {
             className="text-3xl hover:text-red-400 transition" 
             onClick={() => setMenuOpen(false)}
           >
-            ✕
+            <X className="w-6 h-6" />
           </button>
         </div>
 
@@ -90,13 +93,13 @@ export default function Nav({ user }: { user: IUser }) {
         <div className="flex flex-col gap-3 font-medium mt-6">
           {user?.role === "admin" && (
             <>
-              <Link href="/admin/add-grocery" className='flex items-center gap-2 bg-white text-green-700 font-semibold px-4 py-2 rounded-full hover:bg-green-100 transition-all'>
-                <PlusCircle className='w-5 h-5' />Add Grocery
+              <Link href="/admin/add-grocery" className='flex items-center gap-3 p-3 rounded-lg bg-white/10 hover:bg-white/20 hover:pl-4 transition-all'>
+                <PlusCircle className='w-5 h-5' /> Add Grocery
               </Link>
-              <Link href="/admin/view-grocery" className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/10 transition">
+              <Link href="/admin/view-grocery" className="flex items-center gap-3 p-3 rounded-lg bg-white/10 hover:bg-white/20 hover:pl-4 transition-all">
                 <Boxes className="w-5 h-5" /> View Grocery
               </Link>
-              <Link href="/admin/manage-orders" className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/10 transition">
+              <Link href="/admin/manage-orders" className="flex items-center gap-3 p-3 rounded-lg bg-white/10 hover:bg-white/20 hover:pl-4 transition-all">
                 <ClipboardCheck className="w-5 h-5" /> Manage Orders
               </Link>
             </>
@@ -105,16 +108,18 @@ export default function Nav({ user }: { user: IUser }) {
 
         <div className="my-5 border-t border-white/20"></div>
 
-        <Link href={"/user/cart"} className='relative bg-white rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105 transition'>
-          <ShoppingCart className='text-green-600 w-6 h-6' />
-          <span className='absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 flex items-center justify-center rounded-full font-semibold shadow'>{cartData?.length}</span>
-        </Link>
+        {user?.role === "user" && (
+          <Link href="/user/cart" className='relative bg-white rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105 transition'>
+            <ShoppingCart className='text-green-600 w-6 h-6' />
+            <span className='absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 flex items-center justify-center rounded-full font-semibold shadow'>{cartData?.length || 0}</span>
+          </Link>
+        )}
 
         <button 
           onClick={async () => await signOut({ callbackUrl: "/" })}
-          className="flex items-center gap-3 text-red-400 hover:text-red-500 w-full p-3 rounded-lg hover:bg-white/10 transition mt-auto"
+          className="flex items-center gap-3 text-red-300 font-semibold hover:bg-red-500/20 w-full p-3 rounded-lg transition mt-auto"
         >
-          <LogOut className="w-5 h-5" /> Logout
+          <LogOut className="w-5 h-5 text-red-300" /> Logout
         </button>
       </motion.div>
     </AnimatePresence>,
@@ -159,23 +164,24 @@ export default function Nav({ user }: { user: IUser }) {
 
         <div className="flex items-center gap-3 md:gap-6">
           {user?.role === "user" && (
-            <div 
-              className="md:hidden bg-white rounded-full w-11 h-11 flex items-center justify-center shadow-md cursor-pointer hover:scale-105 transition"
-              onClick={() => setSearchBarOpen(prev => !prev)}
-            >
-              <Search className="text-green-600 w-6 h-6" />
-            </div>
+            <>
+              <div 
+                className="md:hidden bg-white rounded-full w-11 h-11 flex items-center justify-center shadow-md cursor-pointer hover:scale-105 transition"
+                onClick={() => setSearchBarOpen(prev => !prev)}
+              >
+                <Search className="text-green-600 w-6 h-6" />
+              </div>
+
+              <Link href="/cart" className="relative bg-white rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105 transition">
+                <ShoppingCart className="text-green-600 w-6 h-6" />
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-semibold w-5 h-5 flex items-center justify-center rounded-full shadow">
+                  {cartData?.length || 0}
+                </span>
+              </Link>
+            </>
           )}
 
-          {user?.role === "user" && (
-            <Link href="/cart" className="relative bg-white rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105 transition">
-              <ShoppingCart className="text-green-600 w-6 h-6" />
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-semibold w-5 h-5 flex items-center justify-center rounded-full shadow">
-                {cartData?.length}
-              </span>
-            </Link>
-          )}
-
+          {/* Mobile Menu Button */}
           <div 
             className="md:hidden bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-md cursor-pointer hover:scale-105 transition"
             onClick={() => setMenuOpen(prev => !prev)}
@@ -183,6 +189,7 @@ export default function Nav({ user }: { user: IUser }) {
             <Menu className="text-green-600 w-6 h-6" />
           </div>
 
+          {/* Profile Dropdown */}
           <div className="relative" ref={profileDropDown}>
             <div 
               className="bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-md cursor-pointer hover:scale-105 transition overflow-hidden"
@@ -246,6 +253,7 @@ export default function Nav({ user }: { user: IUser }) {
 
       {sideBar}
 
+      {/* Mobile Search Bar */}
       <AnimatePresence>
         {searchBarOpen && (
           <motion.div
@@ -267,7 +275,7 @@ export default function Nav({ user }: { user: IUser }) {
                 onClick={() => setSearchBarOpen(false)}
                 className="text-gray-400 hover:text-gray-600 transition"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
           </motion.div>

@@ -3,7 +3,11 @@ import { EyeIcon, EyeOff, Leaf, Loader2, Lock, LogIn as LogInIcon, Mail } from '
 import React, { FormEvent, useState } from 'react'
 import { motion } from 'motion/react'
 import Image from 'next/image'
+<<<<<<< HEAD
 import googleIcon from '../../assets/google-logo.png'
+=======
+import googleImage from '../../assets/google.png'
+>>>>>>> origin/xyz
 import { signIn, useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
@@ -26,6 +30,10 @@ function LogIn() {
         password,
         redirect: false,
       })
+<<<<<<< HEAD
+=======
+      router.push("/login")
+>>>>>>> origin/xyz
 
       if (result?.error) {
         setError('Login failed. Please check your credentials.')
@@ -102,7 +110,11 @@ function LogIn() {
 
         <button
           type="submit"
+<<<<<<< HEAD
           className="w-full rounded-xl bg-green-600 px-4 py-3 text-white font-semibold hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-green-300"
+=======
+          className="w-full rounded-xl bg-green-600 px-4 py-3 text-white font-semibold hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-green-300" onClick={()=>signIn("google")}
+>>>>>>> origin/xyz
           disabled={!formValidation || loading}
         >
           {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Login'}
@@ -113,6 +125,7 @@ function LogIn() {
           <span className="relative bg-white px-3 text-sm font-medium text-gray-400">OR</span>
         </div>
 
+<<<<<<< HEAD
         <button
           type="button"
           className="mt-2 flex items-center justify-center gap-2 rounded-xl border border-gray-300 px-4 py-3 text-gray-700 hover:bg-gray-100"
@@ -123,6 +136,17 @@ function LogIn() {
         {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
       </motion.form>
 
+=======
+        {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
+      
+      <div className="mt-2 flex items-center justify-center gap-2 rounded-xl border border-gray-300 px-4 py-3 text-gray-700 hover:bg-gray-100"
+          onClick={() => signIn("google", { callbackUrl: "/" })}
+        >
+          <Image src={googleImage} width={20} height={20} alt="Google" />
+          Continue with Google
+        </div>
+        </motion.form>
+>>>>>>> origin/xyz
       <p className="cursor-pointer mt-6 text-gray-600 text-sm flex items-center gap-1" onClick={() => router.push('/register')}>
         Do not have an account?
         <LogInIcon className="w-4 h-4" />

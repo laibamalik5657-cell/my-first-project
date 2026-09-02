@@ -1,9 +1,11 @@
 import { ArrowLeft, EyeIcon, EyeOff, Leaf, Loader2, Lock, LogIn, Mail, User } from 'lucide-react'
 import React, { useState } from 'react'
+import { useRouter } from "next/navigation";
 import { motion } from 'motion/react'
 import Image from 'next/image'
-import googleIcon from '../assets/google-logo.png'
+import googleIcon from '../assets/google.png'
 import axios from 'axios'
+import { signIn } from 'next-auth/react'
 
 type propType = {
   previousStep?: (s: number) => void
@@ -16,17 +18,18 @@ function RegisterForm({ previousStep }: propType) {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const router = useRouter();
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
     try {
-      const result = await axios.post('/api/register', {
+      const result = await axios.post('/api/auth/register', {
         name,
         email,
         password,
       })
-      console.log(result.data)
+      router.push("/login")
       setLoading(false)
     } catch (error) {
       console.error(error)
@@ -124,14 +127,13 @@ function RegisterForm({ previousStep }: propType) {
           <span className="relative bg-white px-3 text-sm font-medium text-gray-400">OR</span>
         </div>
 
-        <button
-          type="button"
-          className="mt-2 flex items-center justify-center gap-2 rounded-xl border border-gray-300 px-4 py-3 text-gray-700 hover:bg-gray-100"
-        >
-          <Image src={googleIcon} width={20} height={20} alt="Google" />
-          Continue with Google
-        </button>
       </motion.form>
+       <div className='w-full flex items-center justify-center gap-3 border border-gray-300 hover:bg-gray-50 py-3 rounded-xl text-gray-700 transition-all duration-200' 
+       onClick={() => signIn("google", { callbackUrl: "/" })}
+>
+      <Image src={googleIcon} width={20} height={20} alt='google' />
+      Continue with Google
+      </div>
       <p className=" cursor-pointer mt-6 text-gray-600 text-sm flex items-center gap-1">
         Already have an account?
         <LogIn className="w-4 h-4" /> 

@@ -9,7 +9,7 @@ import InitUser from '@/InitUser';
 
 export const metadata: Metadata = {
   title: "SmartBasket",
-  description: "grocery shopping app",
+  description: "grocery delivery app",
 };
 
 export default function RootLayout({

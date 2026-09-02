@@ -1,38 +1,41 @@
-import Welcome from "../components/Welcome";
-import Nav from "../components/Nav";
-
-import UserDashboard from "../components/UserDashboard";
-import AdminDashboard from "@/components/AdminDashboard";
-import DeliveryBoy from "@/components/DeliveryBoy";
-import EditRoleMobile from "@/components/EditRoleMobile";
-import GeoUpdater from "@/components/GeoUpdater";
-
+import { auth } from '@/auth'
+import AdminDashboard from '@/components/AdminDashboard'
+import DeliveryBoy from '@/components/DeliveryBoy'
+import EditRoleMobile from '@/components/EditRoleMobile'
+import GeoUpdater from '@/components/GeoUpdater'
+import Nav from '@/components/Nav'
+import UserDashboard from '@/components/UserDashboard'
+import connectDb from '@/lib/db'
+import User from '@/models/user.model'
+import { redirect } from 'next/navigation'
+import React from 'react'
 
 async function Home() {
-    // TODO: Get user from session/context
-    const user: any = null;
-    const role = user?.role as string | undefined;
-    const incomplete = user?.incomplete as boolean | undefined;
+  await connectDb()
+  const session = await auth()
+  const user = await User.findById(session?.user?.id)
 
-    if (role === "user" && incomplete) {
-        return <EditRoleMobile />;
-    }
+  if (!user) {
+    redirect("/login")
+  }
 
-    const plainUser = user ? JSON.parse(JSON.stringify(user)) : null;
+  const inComplete = !user.mobile || !user.role || (!user.mobile && user.role == "user")
 
-    return (
-        <>
-            <Nav user={plainUser} />
-            <GeoUpdater userId={plainUser?._id} />
-            {plainUser?.role === "user" ? (
-                <UserDashboard />
-            ) : plainUser?.role === "admin" ? (
-                <AdminDashboard />
-            ) : (
-                <DeliveryBoy />
-            )}
-        </>
-    );
+  if (inComplete) {
+    return <EditRoleMobile />
+  }
+  const plainuser = JSON.parse(JSON.stringify(user))
+  return (
+    <>
+      <Nav user={plainuser} />
+      <GeoUpdater userId={plainuser?._id} />
+      {user.role == "user" ? (
+        <UserDashboard />
+      ) : user.role == "admin" ? (
+        <AdminDashboard />
+      ) : <DeliveryBoy />}
+    </>
+  )
 }
 
-export default Home;
+export default Home
