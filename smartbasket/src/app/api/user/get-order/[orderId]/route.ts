@@ -1,0 +1,21 @@
+import { NextResponse } from "next/server"
+import connectDb from "@/lib/db"
+import Order from "@/models/order.model"
+
+export async function GET(req: Request, { params }: { params: { orderId: string } }) {
+    try {
+        await connectDb()
+        const { orderId } = await params
+        const order = await Order.findById(orderId).populate("")
+        if (!order) {
+            return NextResponse.json({
+                message: "order not found"
+            }, { status: 400 })
+        }
+        return NextResponse.json(order, { status: 200 })
+    } catch (error) {
+        return NextResponse.json({
+            message: `get order by id error ${error}`
+        }, { status: 500 })
+    }
+}
