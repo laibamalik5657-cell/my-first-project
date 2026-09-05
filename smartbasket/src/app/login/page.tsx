@@ -1,13 +1,13 @@
 "use client"
-import { EyeIcon, EyeOff, Leaf, Loader2, Lock, LogIn as LogInIcon, Mail } from 'lucide-react'
+import { EyeIcon, EyeOff, Leaf, Loader2, Lock, LogIn, Mail } from 'lucide-react'
 import React, { FormEvent, useState } from 'react'
 import { motion } from 'motion/react'
 import Image from 'next/image'
-import googleIcon from '../../assets/google-logo.png'
+import googleImage from '../../assets/google-logo.png'
 import { signIn, useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
-function LogIn() {
+function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -67,6 +67,7 @@ function LogIn() {
         transition={{ duration: 0.6 }}
         className="flex flex-col gap-4 w-full max-w-sm"
       >
+        
         <div className="relative">
           <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
           <input
@@ -115,9 +116,10 @@ function LogIn() {
 
         <button
           type="button"
+          onClick={()=>signIn('google')}
           className="mt-2 flex items-center justify-center gap-2 rounded-xl border border-gray-300 px-4 py-3 text-gray-700 hover:bg-gray-100"
         >
-          <Image src={googleIcon} width={20} height={20} alt="Google" />
+          <Image src={googleImage} width={20} height={20} alt="Google" />
           Continue with Google
         </button>
         {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
@@ -125,7 +127,7 @@ function LogIn() {
 
       <p className="cursor-pointer mt-6 text-gray-600 text-sm flex items-center gap-1" onClick={() => router.push('/register')}>
         Do not have an account?
-        <LogInIcon className="w-4 h-4" />
+        <LogIn className="w-4 h-4" />
         <span className="text-green-600">Sign Up</span>
       </p>
     </div>
