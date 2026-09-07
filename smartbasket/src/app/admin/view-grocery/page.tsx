@@ -239,7 +239,7 @@ onChange={(e) => setEditing({...editing, category: e.target.value})}
     type="text"
     placeholder='Price'
     value={editing.price}
-    onChange={(e) => setEditing({...editing, price: Number(e.target.value)})}
+    onChange={(e) => setEditing({...editing, price:(e.target.value)})}
     className='w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2
     focus:ring-green-500 outline-none'/>
     

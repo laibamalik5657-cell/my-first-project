@@ -1,9 +1,10 @@
-import NextAuth from "next-auth"
+
 import Credentials from "next-auth/providers/credentials"
 import connectDb from "./lib/db"
 import User from "./models/user.model"
 import bcrypt from "bcryptjs"
 import Google from "next-auth/providers/google"
+import NextAuth from "next-auth"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -18,7 +19,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const password = credentials?.password as string
         const user = await User.findOne({ email })
         if (!user) {
-          throw new Error("user does not exist")
+          return null
         }
         const isMatch = await bcrypt.compare(password, user.password)
         if (!isMatch) {
@@ -89,7 +90,7 @@ pages: {
   },
   session: {
     strategy: "jwt",
-    maxAge: 10 * 24 * 60 * 60 * 1000,
+    maxAge: 10 * 24 * 60 * 60*1000, 
   },
   secret: process.env.AUTH_SECRET
 })

@@ -11,7 +11,7 @@ function EditRoleMobile() {
   const router = useRouter()
   const { update } = useSession()
 
-  const [roles] = useState([
+  const [roles,setRoles] = useState([
     { id: "admin", label: "Admin", icon: UserCog },
     { id: "user", label: "User", icon: User },
     { id: "deliveryBoy", label: "Delivery Boy", icon: Bike },
@@ -38,7 +38,9 @@ useEffect(()=>{
     const checkForAdmin=async ()=>{
     try {
     const result=await axios.get("/api/check-for-admin")
-    console.log(result)
+    if(result.data.adminExists){
+      setRoles(prev=>prev.filter(r=>r.id!=="admin"))
+    }
     } catch (error) {
     console.log(error)
     }

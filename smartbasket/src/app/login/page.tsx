@@ -7,7 +7,7 @@ import googleImage from '../../assets/google-logo.png'
 import { signIn, useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
-function LoginPage() {
+function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -17,7 +17,7 @@ function LoginPage() {
   const session = useSession()
   console.log(session)
 
-  const handleLogin = async (e:FormEvent) => {
+  const handleLogin = async (e:React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     try {
@@ -136,4 +136,4 @@ function LoginPage() {
   )
 }
 
-export default LogIn
+export default Login
