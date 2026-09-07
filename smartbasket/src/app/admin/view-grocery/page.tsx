@@ -25,16 +25,19 @@ function ViewGrocery() {
     const router=useRouter()
     const [groceries,setGroceries]=useState<IGrocery[]>()
      const [editing,setEditing]=useState<IGrocery | null >(null)
+     const [search,setSearch]=useState("")
         const [imagePreview,setImagePreview]=useState<string | null >(null)
         const[backendImage,setBackendImage]=useState<Blob | null >(null)
         const[loading,setLoading]=useState(false)
-        const[deleteloading,setDeleteLoading]=useState(false)   
+        const[deleteloading,setDeleteLoading]=useState(false)  
+        const [fillterd, setFilltered] = useState<IGrocery[]>([]); 
         
   useEffect(()=>{
     const getGroceries = async ()=>{
       try {
         const result = await axios.get("/api/admin/get-groceries")
        setGroceries(result.data)
+       setFilltered(result.data)
       } catch (error) {
         console.log(error)
       }
@@ -114,6 +117,7 @@ const handleDelete=async ()=>{
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.4 }}
+    onSubmit={handleSearch}
     className="flex items-center bg-white border border-gray-200 rounded-full px-5 py-3 shadow-sm 
     mb-10 hover:shadow-lg transition-all max-w-lg mx-auto w-full"
 >
@@ -121,13 +125,13 @@ const handleDelete=async ()=>{
     <input 
         type="text" 
         className='w-full outline-none text-gray-700 placeholder-gray-400' 
-        placeholder="Search by name or category..."
+        placeholder="Search by name or category..."value={search} onChange={(e)=>setSearch(e.target.value)}
     />
 </motion.form>
 
 
 <div className='space-y-4'>
-  {groceries?.map((g, i) => (
+  {fillterd?.map((g, i) => (
     <motion.div
       key={i}
       whileHover={{ scale: 1.01 }}

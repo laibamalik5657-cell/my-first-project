@@ -9,6 +9,7 @@ import dynamic from 'next/dynamic'
 import LiveMap from './LiveMap'
 import DeliveryChat from './DeliveryChat'
 import { Loader } from 'lucide-react'
+import { Bar, BarChart, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
 
 
@@ -18,7 +19,7 @@ interface Ilocation{
   longitude : number
 }
 
-function DeliveryBoyDashboard() {
+function DeliveryBoyDashboard({earning}:{earning:number}) {
   const [assignments, setAssignments] = useState<any[]>([])
   const {userData}=useSelector((state:RootState)=>state.user)
   const [activeOrder,setActiveOrder]=useState<any>(null)
@@ -89,7 +90,7 @@ useEffect(():any=>{
 
 const handleAccept=async (id:string)=>{
     try {
-    const result=await axios.get('/api/delivery/assignment/${id}/accept-assignment')
+    const result =await axios.get('/api/delivery/assignment/${id}/accept-assignment')
 fetchCurrentOrder()
     } catch (error) {
         console.log(error)
@@ -149,15 +150,51 @@ const verifyOtp = async ()=>{
     console.log(result)
    setActiveOrder(null)
    setVerifyOtpLoading(false)
-   await fetchCurrentOrder// Close OTP box after verification
-    // Handle success - maybe show success message
+   await fetchCurrentOrder()
+   window.location.reload()
   } catch (error) {
     setOtpError("Otp Verification Error")
     setVerifyOtpLoading(false)
   }
 }
 
+if(!activeOrder && assignments.length===0){
 
+  const todayEarning=[
+    {name:"Today",
+     earning,
+     deliveries:earning/40
+    }
+  ]
+  return (
+    <div className='flex items-center justify-center min-h-screen bg-linear-to-br from-white
+    to-green-50 p-6'>
+      <div className='max-w-md w-full text-center'>
+        <h2 className='text-2xl font-bold text-gray-800'>No Active Deliveries 🚛</h2>
+        <p className='text-gray-500 mb-5'>Stay online to receive new orders</p>
+
+        <div className='bg-white border rounded-xl shadow-xl p-6'>
+        <h2 className='font-medium text-green-700 mb-2'>{"Today's Performance"}</h2>
+          <ResponsiveContainer width="100%" height={200}>
+  <BarChart data={todayEarning}>
+    <XAxis dataKey="name" />
+    <YAxis />
+    <Tooltip />
+    <Legend />
+    <Bar dataKey="earnings" name="Earnings (₹)" />
+    <Bar dataKey="deliveries" name="Deliveries" />
+
+  </BarChart>
+</ResponsiveContainer>
+<p className='mt-4 text-lg font-bold text-green-700'>₹{earning || 0} Earned today</p>
+<button className='mt-4 w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg'
+onClick={() => window.location.reload()}>Refresh Earning</button>
+        </div>
+      </div>
+
+    </div>
+  )
+}
 
 
 if(activeOrder && userLocation){
