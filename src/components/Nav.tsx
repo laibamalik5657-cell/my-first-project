@@ -1,26 +1,16 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useRef, useEffect, FormEvent } from 'react';
+import { motion, AnimatePresence } from 'framer-motionv';
 import Image from 'next/image';
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
-import { 
-  User, 
-  Menu, 
-  Search, 
-  ShoppingCart, 
-  Boxes, 
-  ClipboardCheck, 
-  LogOut, 
-  Package, 
-  PlusCircle,
-  X
-} from 'lucide-react';
+import { User,  Menu, Search,  ShoppingCart, Boxes,  ClipboardCheck,  LogOut,  Package, PlusCircle, } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/redux/store';
 import mongoose from 'mongoose';
+import { useRouter } from 'next/navigation';
 
 interface IUser {
   _id?: mongoose.Types.ObjectId;
@@ -36,10 +26,10 @@ export default function Nav({ user }: { user: IUser }) {
   const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchBarOpen, setSearchBarOpen] = useState(false);
-
   const { cartData } = useSelector((state: RootState) => state.cart);
-
+  const [search, setSearch] = useState("")
   const profileDropDown = useRef<HTMLDivElement>(null);
+  const router=useRouter()
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -52,6 +42,20 @@ export default function Nav({ user }: { user: IUser }) {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+  const handleSearch=(e:FormEvent)=>{
+  e.preventDefault()
+  const query=search.trim()
+  if(!query){
+    return router.push("/")
+  }
+
+  router.push(`/?q=${encodeURIComponent(query)}`)
+  setSearch("")
+  setSearchBarOpen(false)
+}
+    
+  }
+
 
   const sideBar = menuOpen ? createPortal(
     <AnimatePresence>
@@ -137,12 +141,12 @@ export default function Nav({ user }: { user: IUser }) {
         </Link>
 
         {user?.role === "user" && (
-          <form className="hidden md:flex items-center bg-white rounded-full px-4 py-2 w-1/2 max-w-lg shadow-md">
+          <form className="hidden md:flex items-center bg-white rounded-full px-4 py-2 w-1/2 max-w-lg shadow-md" onSubmit={handleSearch}>
             <Search className="text-gray-500 w-5 h-5 mr-3" />
-            <input
-              type="text"
-              placeholder="Search groceries..."
+            <input type="text" placeholder="Search groceries..."
               className="flex-1 outline-none text-gray-700 placeholder:text-gray-400"
+              value={search}
+              onChange={(e)=>setSearch(e.target.value)}
             />
           </form>
         )}
@@ -263,21 +267,15 @@ export default function Nav({ user }: { user: IUser }) {
             transition={{ duration: 0.3 }}
             className="fixed top-24 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-white rounded-2xl shadow-xl p-4 z-[60] md:hidden"
           >
-            <div className="flex items-center bg-gray-100 rounded-full px-4 py-3">
-              <Search className="text-gray-500 w-5 h-5 mr-3" />
-              <input
-                type="text"
-                placeholder="Search groceries..."
-                className="flex-1 bg-transparent outline-none text-gray-700"
-                autoFocus
-              />
-              <button 
-                onClick={() => setSearchBarOpen(false)}
-                className="text-gray-400 hover:text-gray-600 transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+            <Search className='text-gray-500 w-5 h-5 mr-2' />
+   <form className='grow' onSubmit={handleSearch}>
+     <input type="text" className='w-full outline-none text-gray-700' 
+     placeholder='search groceries...' value={Search}
+      onChange={(e)=>setSearch(e.target.value)}/>
+     </form>
+<button onClick={() => setSearchBarOpen(false)}>
+  <X className='text-gray-500 w-5 h-5' />
+</button>
           </motion.div>
         )}
       </AnimatePresence>

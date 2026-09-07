@@ -19,7 +19,6 @@
     "mongoose": "^9.9.2",
     "motion": "^12.40.0",
     "next": "^16.2.6",
-    "next-auth": "^4.24.15",
     "nodemailer": "^9.0.5",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -35,10 +34,11 @@
     "@types/nodemailer": "^8.0.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19",
-    "eslint": "^9",
     "axios": "^1.18.0",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.10.1",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.9",
     "lucide-react": "^1.31.0",
     "mongoose": "^9.7.1",
     "motion": "^13.1.0",
@@ -46,11 +46,7 @@
     "next-auth": "^5.0.0-beta.32",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-      "tailwindcss": "^4",
-    "typescript": "^5",
-     "eslint-config-next": "16.2.9"
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
- 
-  
-  }
-
+}
