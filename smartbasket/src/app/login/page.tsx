@@ -3,7 +3,7 @@ import { EyeIcon, EyeOff, Leaf, Loader2, Lock, LogIn, Mail } from 'lucide-react'
 import React, { FormEvent, useState } from 'react'
 import { motion } from 'motion/react'
 import Image from 'next/image'
-import googleImage from '../../assets/google-logo.png'
+import googleImage from '@/assets/google-logo.png';
 import { signIn, useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
@@ -106,7 +106,7 @@ function Login() {
 
         <button
           type="submit"
-          className="w-full rounded-xl bg-green-600 px-4 py-3 text-white font-semibold hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-green-300" onClick={()=>signIn("google")}
+          className="w-full rounded-xl bg-green-600 px-4 py-3 text-white font-semibold hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-green-300" 
           disabled={!formValidation || loading}
         >
           {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Login'}

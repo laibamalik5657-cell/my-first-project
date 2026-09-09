@@ -2,11 +2,11 @@
 import axios from 'axios';
 import { ArrowLeft, Package ,PackageSearch } from 'lucide-react'
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import React from 'react'
 import {useEffect, useState} from 'react';
 import {motion} from 'motion/react';
 import UserOrderCard from '@/components/UserOrderCard';
-import mongoose from 'mongoose';
 import { IUser } from '@/models/user.model';
 import { getSocket } from '@/lib/socket';
 interface IOrder {
@@ -34,7 +34,7 @@ interface IOrder {
         latitude?: number,
         longitude?: number
     }
-    assignment?: mongoose.Types.ObjectId
+    assignment?: string
     assignedDeliveryBoy?: IUser;
     status: "pending" | "out of delivery" | "delivered",
     createdAt?: string | Date
@@ -105,7 +105,10 @@ if (loading) {
   <div className='pt-20 flex flex-col items-center text-center'>
     <PackageSearch size={70} className="text-green-600 mb-4" />
     <h2 className='text-xl font-semibold text-gray-700'>No Orders Found</h2>
-    <p className='text-gray-500 text-sm mt-1'>Start shopping to view your orders here.</p>
+    <p className='text-gray-500 text-sm mt-1'>
+     <Link href="/"  className='text-green-600 font-medium underline hover:text-green-700 transition-colors'> Start shopping to view your orders here.
+     </Link></p>
+   
   </div>
 ) : (
 

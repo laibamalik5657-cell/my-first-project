@@ -13,16 +13,14 @@
     "@types/leaflet": "^1.9.21",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
+    "framer-motion": "^13.2.0",
     "leaflet": "^1.9.4",
     "leaflet-geosearch": "^4.4.0",
     "lucide-react": "^1.17.0",
     "mongoose": "^9.9.2",
     "motion": "^12.40.0",
     "next": "^16.2.6",
-<<<<<<< HEAD:smartbasket/package.json
     "next-auth": "^5.0.0-beta.32",
-=======
->>>>>>> 9f9a978f2bd8179e12599a8fb5be2af72518d144:package.json
     "nodemailer": "^9.0.5",
     "react": "19.2.3",
     "react-dom": "19.2.3",

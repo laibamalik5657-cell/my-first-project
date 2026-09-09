@@ -2,7 +2,6 @@
 import axios from 'axios'
 import React, { useEffect, useState,useRef } from 'react'
 import { useParams} from 'next/navigation'
-import mongoose from 'mongoose'
 import { IUser } from '@/models/user.model'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/redux/store'
@@ -38,7 +37,7 @@ interface IOrder {
         latitude?: number,
         longitude?: number
     }
-    assignment?: mongoose.Types.ObjectId
+    assignment?: string
     assignedDeliveryBoy?: IUser;
     status: "pending" | "out of delivery" | "delivered",
     createdAt?: string | Date
@@ -149,7 +148,7 @@ useEffect(()=>{
 const getSuggestion=async ()=>{
 setLoading(true)
     try {
-    const lastMessage=messages?.filter(m=>m.senderId!==userData?._id)?.at(-1)
+    const lastMessage=messages?.filter(m=>m.senderId.toString()!==userData?._id)?.at(-1)
     const result=await axios.post("/api/chat/ai-suggestions", {message:lastMessage?.text,role:"user"})
    setSuggestions(result.data)
    setLoading(false)
@@ -195,7 +194,7 @@ setLoading(true)
     </motion.button>
 </div>
 
-//suggestion map
+
 
 <div className='flex gap-2 flex-wrap mb-3'>
   {suggestions.map((s, i) => (
@@ -219,10 +218,10 @@ setLoading(true)
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
-        className={`flex ${msg.senderId === userData?._id? "justify-end" : "justify-start"}`}
+        className={`flex ${msg.senderId.toString() === userData?._id? "justify-end" : "justify-start"}`}
       >
 
-        <div className={`px-4 py-2 max-w-[75%] rounded-2xl shadow ${msg.senderId=== userData?._id?
+        <div className={`px-4 py-2 max-w-[75%] rounded-2xl shadow ${msg.senderId.toString()=== userData?._id?
             "bg-green-600 text-white rounded-br-none ":"bg-gray-100  text-gray-800 rounded-bl-none"
          }]`}>
           <p >{msg.text}</p>

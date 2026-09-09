@@ -2,7 +2,9 @@
 import React from 'react'
 import {motion} from "motion/react"
 import Link from 'next/link'
-import {  Instagram, Mail, MapPin, Phone, Twitter } from 'lucide-react'
+import {  Mail, MapPin, Phone,  } from 'lucide-react'
+import { FaFacebook, FaInstagram, FaTwitter } from 'react-icons/fa6'
+
 function Footer() {
     return (
         <motion.div
@@ -44,13 +46,13 @@ function Footer() {
 {/* Social Links */}
 <div className="flex gap-4 mt-4">
     <Link href="https://facebook.com" target="_blank">
-        <Facebook size={20} className="hover:text-white transition" />
+        <FaFacebook size={20} className="hover:text-white transition" />
     </Link>
     <Link href="https://instagram.com" target="_blank">
-        <Instagram size={20} className="hover:text-white transition" />
+        <FaInstagram size={20} className="hover:text-white transition" />
     </Link>
     <Link href="https://twitter.com" target="_blank">
-        <Twitter size={20} className="hover:text-white transition" />
+        <FaTwitter size={20} className="hover:text-white transition" />
     </Link>
 </div>
  <div className="text-center py-4 text-sm text-green-100 bg-green-800/40">

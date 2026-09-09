@@ -8,10 +8,10 @@ import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "@/redux/store";
 import { AppDispatch } from "@/redux/store";
 import { addToCart,increaseQuantity, decreaseQuantity ,} from "@/redux/cartSlice";
-import mongoose from "mongoose";
+
 
 interface IGrocery {
-    _id: mongoose.Types.ObjectId,
+    _id: string,
     name: string,
     category: string,
     price: string,
@@ -25,7 +25,7 @@ interface IGrocery {
 function GroceryItemCard({ item }: { item: IGrocery }) {
     const dispatch=useDispatch<AppDispatch>()
      const { cartData } = useSelector((state: RootState) => state.cart);
-     const cartItem=cartData.find(i=>i._id==item._id)
+     const cartItem=cartData.find(i=>i._id.toString()==item._id)
 
     const handleAddToCart = () => {
         dispatch({

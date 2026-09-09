@@ -30,7 +30,7 @@ function ViewGrocery() {
         const[backendImage,setBackendImage]=useState<Blob | null >(null)
         const[loading,setLoading]=useState(false)
         const[deleteloading,setDeleteLoading]=useState(false)  
-        const [fillterd, setFilltered] = useState<IGrocery[]>([]); 
+        const [fillterd, setFilltered] = useState<IGrocery[]>() 
         
   useEffect(()=>{
     const getGroceries = async ()=>{
@@ -91,7 +91,16 @@ const handleDelete=async ()=>{
        console.log(error)
     }
 }
+const handleSearch=(e:React.FormEvent)=>{
+    e.preventDefault()
+    const q=search.toLowerCase()
 
+    setFilltered(
+        groceries?.filter(
+            (g)=>g.name.toLowerCase().includes(q) || g.category.toLowerCase().includes(q)
+        )
+    )
+}
   return (
     <div className="pt-4 w-[95%] md:w-[85%] mx-auto pb-20">
 

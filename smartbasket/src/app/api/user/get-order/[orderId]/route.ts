@@ -2,10 +2,10 @@ import { NextResponse } from "next/server"
 import connectDb from "@/lib/db"
 import Order from "@/models/order.model"
 
-export async function GET(req: Request, { params }: { params: { orderId: string } }) {
+export async function GET(req: Request,  context: { params :Promise<{orderId:string;}>;}) {
     try {
         await connectDb()
-        const { orderId } = await params
+        const { orderId } = await context.params
         const order = await Order.findById(orderId).populate("")
         if (!order) {
             return NextResponse.json({

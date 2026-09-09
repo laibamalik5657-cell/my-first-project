@@ -6,7 +6,6 @@ import { ChevronDown, ChevronUp, CreditCard, MapPin, Package, Phone, Truck, User
 import Image from 'next/image'
 import { IUser } from '@/models/user.model'
 import axios from 'axios'
-import mongoose from 'mongoose'
 import { getSocket } from '@/lib/socket'
 
 // Use plain strings for IDs in the client to avoid referencing mongoose server-side types
@@ -35,7 +34,7 @@ interface IOrder {
         latitude?: number,
         longitude?: number
     }
-    assignment?: mongoose.Types.ObjectId
+    assignment?: string
     assignedDeliveryBoy?: IUser;
     status: "pending" | "out of delivery" | "delivered",
     createdAt?: string | Date
