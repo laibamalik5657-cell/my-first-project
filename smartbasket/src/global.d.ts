@@ -6,5 +6,10 @@ declare global {
         conn: Connection | null,
         promise: Promise<Connection> | null;
     }
-}
+};
+declare module "*.png" {
+    const value: any;
+    export default value;
+  }
+
 export {};

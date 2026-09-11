@@ -5,6 +5,7 @@ import EditRoleMobile from '@/components/EditRoleMobile'
 import GeoUpdater from '@/components/GeoUpdater'
 import Nav from '@/components/Nav'
 import UserDashboard from '@/components/UserDashboard'
+import Footer from "@/components/Footer";
 import connectDb from '@/lib/db'
 import Grocery, { IGrocery } from '@/models/grocery.model'
 import User from '@/models/user.model'
@@ -35,6 +36,7 @@ async function Home(props:{
   const plainUser = JSON.parse(JSON.stringify(user))
 
 let groceryList: IGrocery[] = []
+const NavComponent = Nav as React.ComponentType<any>
 
 if (user.role === "user") {
     if (searchParams.q) {
@@ -44,13 +46,14 @@ if (user.role === "user") {
                 { category: { $regex: searchParams?.q || "", $options: "i" } },
             ]
         })
-    }}else{
+    }else{
     groceryList=await Grocery.find({}).lean()
 }
-}
+
+
   return (
     <>
-      <Nav user={plainuser} />
+      <NavComponent user={plainuser} />
       <GeoUpdater userId={plainuser?._id} />
       {user.role == "user" ? (
        <UserDashboard groceryList={groceryList}/>
@@ -61,5 +64,5 @@ if (user.role === "user") {
     </>
   )
 }
-
+}
 export default Home

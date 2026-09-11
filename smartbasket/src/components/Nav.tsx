@@ -1,19 +1,18 @@
 'use client';
 
 import { useState, useRef, useEffect, FormEvent } from 'react';
-import { motion, AnimatePresence } from 'framer-motionv';
+import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
-import { User,  Menu, Search,  ShoppingCart, Boxes,  ClipboardCheck,  LogOut,  Package, PlusCircle, } from 'lucide-react';
+import { User, Menu, Search, ShoppingCart, Boxes, ClipboardCheck, LogOut, Package, PlusCircle, X } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/redux/store';
-import mongoose from 'mongoose';
 import { useRouter } from 'next/navigation';
 
 interface IUser {
-  _id?: mongoose.Types.ObjectId;
+  _id?:string;
   name: string;
   email: string;
   password?: string;
@@ -27,14 +26,13 @@ export default function Nav({ user }: { user: IUser }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchBarOpen, setSearchBarOpen] = useState(false);
   const { cartData } = useSelector((state: RootState) => state.cart);
-  const [search, setSearch] = useState("")
+  const [search, setSearch] = useState("");
   const profileDropDown = useRef<HTMLDivElement>(null);
-  const router=useRouter()
+  const router = useRouter();
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (profileDropDown.current && 
-          !profileDropDown.current.contains(e.target as Node)) {
+      if (profileDropDown.current && !profileDropDown.current.contains(e.target as Node)) {
         setOpen(false);
       }
     };
@@ -42,20 +40,18 @@ export default function Nav({ user }: { user: IUser }) {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-  const handleSearch=(e:FormEvent)=>{
-  e.preventDefault()
-  const query=search.trim()
-  if(!query){
-    return router.push("/")
-  }
 
-  router.push(`/?q=${encodeURIComponent(query)}`)
-  setSearch("")
-  setSearchBarOpen(false)
-}
-    
-  }
+  const handleSearch = (e: FormEvent) => {
+    e.preventDefault();
+    const query = search.trim();
+    if (!query) {
+      return router.push("/");
+    }
 
+    router.push(`/?q=${encodeURIComponent(query)}`);
+    setSearch("");
+    setSearchBarOpen(false);
+  };
 
   const sideBar = menuOpen ? createPortal(
     <AnimatePresence>
@@ -64,8 +60,8 @@ export default function Nav({ user }: { user: IUser }) {
         animate={{ x: 0, opacity: 1 }}
         exit={{ x: -100 }}
         transition={{ type: "spring", stiffness: 100, damping: 14 }}
-        className="fixed top-0 left-0 h-full w-[75%] sm:w-[60%] z-[9999] 
-          bg-gradient-to-b from-green-800/90 via-green-900/90 to-green-900/90 
+        className="fixed top-0 left-0 h-full w-[75%] sm:w-[60%] z-9999 
+          bg-linear-to-b from-green-800/90 via-green-900/90 to-green-900/90 
           backdrop-blur-xl border-r border-green-400 
           shadow-[0_0_50px_-10px_rgba(0,255,100,0.3)] 
           flex flex-col p-6 text-white"
@@ -133,7 +129,7 @@ export default function Nav({ user }: { user: IUser }) {
   return (
     <>
       <div className="w-[95%] fixed top-4 left-1/2 -translate-x-1/2 
-        bg-gradient-to-r from-green-500 to-green-700 rounded-2xl shadow-lg 
+        bg-linear-to-r from-green-500 to-green-700 rounded-2xl shadow-lg 
         shadow-black/30 flex justify-between items-center h-20 px-4 md:px-8 z-50">
 
         <Link href="/" className="text-white font-extrabold text-2xl sm:text-3xl tracking-wide hover:scale-105 transition-transform">
@@ -265,17 +261,17 @@ export default function Nav({ user }: { user: IUser }) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.3 }}
-            className="fixed top-24 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-white rounded-2xl shadow-xl p-4 z-[60] md:hidden"
+            className="fixed top-24 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-white rounded-2xl shadow-xl p-4 z-60 md:hidden"
           >
             <Search className='text-gray-500 w-5 h-5 mr-2' />
-   <form className='grow' onSubmit={handleSearch}>
-     <input type="text" className='w-full outline-none text-gray-700' 
-     placeholder='search groceries...' value={Search}
-      onChange={(e)=>setSearch(e.target.value)}/>
-     </form>
-<button onClick={() => setSearchBarOpen(false)}>
-  <X className='text-gray-500 w-5 h-5' />
-</button>
+            <form className='grow' onSubmit={handleSearch}>
+              <input type="text" className='w-full outline-none text-gray-700' 
+                placeholder='search groceries...' value={search}
+                onChange={(e)=>setSearch(e.target.value)}/>
+            </form>
+            <button onClick={() => setSearchBarOpen(false)}>
+              <X className='text-gray-500 w-5 h-5' />
+            </button>
           </motion.div>
         )}
       </AnimatePresence>

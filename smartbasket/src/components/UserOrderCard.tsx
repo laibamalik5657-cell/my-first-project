@@ -4,7 +4,6 @@ import { motion } from 'motion/react'
 import { ChevronDown, ChevronUp, CreditCard, MapPin, Package, Truck, UserCheck } from 'lucide-react'
 import Image from 'next/image'
 import { getSocket } from '@/lib/socket'
-import mongoose from 'mongoose'
 import { IUser } from '@/models/user.model'
 import { useRouter } from 'next/navigation'
 // Use plain strings for IDs in the client to avoid referencing mongoose server-side types
@@ -33,7 +32,7 @@ interface IOrder {
         latitude?: number,
         longitude?: number
     }
-    assignment?: mongoose.Types.ObjectId
+    assignment?: string
     assignedDeliveryBoy?: IUser;
     status: "pending" | "out of delivery" | "delivered",
     createdAt?: string | Date

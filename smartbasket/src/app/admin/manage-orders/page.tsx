@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
 import { getSocket } from '@/lib/socket'
 import { IUser } from '@/models/user.model'
-import mongoose from 'mongoose'
+
 
 interface IOrder {
     _id?: string
@@ -33,7 +33,7 @@ interface IOrder {
         latitude?: number,
         longitude?: number
     }
-    assignment?: mongoose.Types.ObjectId
+    assignment?: string
     assignedDeliveryBoy?: IUser;
     status: "pending" | "out of delivery" | "delivered",
     createdAt?: string | Date

@@ -25,4 +25,3 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ message: `register error ${error}` }, { status: 500 });
     }
 }
-
