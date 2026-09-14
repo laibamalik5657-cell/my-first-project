@@ -29,6 +29,8 @@ export default function Nav({ user }: { user: IUser }) {
   const [search, setSearch] = useState("");
   const profileDropDown = useRef<HTMLDivElement>(null);
   const router = useRouter();
+const [showProfileModal, setShowProfileModal] = useState(false);
+const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -93,13 +95,16 @@ export default function Nav({ user }: { user: IUser }) {
         <div className="flex flex-col gap-3 font-medium mt-6">
           {user?.role === "admin" && (
             <>
-              <Link href="/admin/add-grocery" className='flex items-center gap-3 p-3 rounded-lg bg-white/10 hover:bg-white/20 hover:pl-4 transition-all'>
+              <Link href="/admin/add-grocery" className='flex items-center gap-3 p-3 rounded-lg bg-white/10 hover:bg-white/20 hover:pl-4 transition-all'
+              onClick={() => setMenuOpen(false)}>
                 <PlusCircle className='w-5 h-5' /> Add Grocery
               </Link>
-              <Link href="/admin/view-grocery" className="flex items-center gap-3 p-3 rounded-lg bg-white/10 hover:bg-white/20 hover:pl-4 transition-all">
+              <Link href="/admin/view-grocery" className="flex items-center gap-3 p-3 rounded-lg bg-white/10 hover:bg-white/20 hover:pl-4 transition-all"
+              onClick={() => setMenuOpen(false)}>
                 <Boxes className="w-5 h-5" /> View Grocery
               </Link>
-              <Link href="/admin/manage-orders" className="flex items-center gap-3 p-3 rounded-lg bg-white/10 hover:bg-white/20 hover:pl-4 transition-all">
+              <Link href="/admin/manage-orders" className="flex items-center gap-3 p-3 rounded-lg bg-white/10 hover:bg-white/20 hover:pl-4 transition-all"
+              onClick={() => setMenuOpen(false)}>
                 <ClipboardCheck className="w-5 h-5" /> Manage Orders
               </Link>
             </>
@@ -172,7 +177,7 @@ export default function Nav({ user }: { user: IUser }) {
                 <Search className="text-green-600 w-6 h-6" />
               </div>
 
-              <Link href="/cart" className="relative bg-white rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105 transition">
+              <Link href="/user/cart" className="relative bg-white rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105 transition">
                 <ShoppingCart className="text-green-600 w-6 h-6" />
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-semibold w-5 h-5 flex items-center justify-center rounded-full shadow">
                   {cartData?.length || 0}
@@ -235,9 +240,9 @@ export default function Nav({ user }: { user: IUser }) {
                     </Link>
                   )}
 
-                  <button onClick={() => setOpen(false)} className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-xl">Profile</button>
-                  <button onClick={() => setOpen(false)} className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-xl">Settings</button>
-
+                  <button onClick={() => { setOpen(false); setShowProfileModal(true); }} className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-xl">Profile</button>
+                  <button onClick={() => {setOpen(false); setShowSettingsModal(true); }} className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-xl">Settings</button>
+                   
                   <button 
                     onClick={() => { setOpen(false); signOut({ callbackUrl: "/" }); }}
                     className="flex items-center gap-3 text-red-400 hover:text-red-500 w-full p-3 rounded-lg hover:bg-red-50 transition"
@@ -275,6 +280,104 @@ export default function Nav({ user }: { user: IUser }) {
           </motion.div>
         )}
       </AnimatePresence>
+      {/* Profile Details Modal */}
+<AnimatePresence>
+  {showProfileModal && (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-999 flex items-center justify-center p-4">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm relative border border-gray-100"
+      >
+        <button 
+          onClick={() => setShowProfileModal(false)}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="flex flex-col items-center text-center mb-5">
+          <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-green-500 mb-2 relative bg-green-50 flex items-center justify-center">
+            {user?.image ? (
+              <Image src={user.image} alt={user.name} fill className="object-cover" />
+            ) : (
+              <User className="w-8 h-8 text-green-600" />
+            )}
+          </div>
+          <h2 className="text-xl font-bold text-gray-800">{user?.name}</h2>
+          <span className="text-xs px-3 py-1 bg-green-100 text-green-700 rounded-full font-medium capitalize mt-1">
+            {user?.role}
+          </span>
+        </div>
+
+        <div className="space-y-3 border-t border-gray-100 pt-4 text-sm">
+          <div className="flex justify-between py-1 border-b border-gray-50">
+            <span className="text-gray-500">Email:</span>
+            <span className="font-semibold text-gray-800">{user?.email || "N/A"}</span>
+          </div>
+          <div className="flex justify-between py-1 border-b border-gray-50">
+            <span className="text-gray-500">Mobile:</span>
+            <span className="font-semibold text-gray-800">{user?.mobile || "Not set"}</span>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setShowProfileModal(false)}
+          className="w-full mt-6 bg-green-600 text-white font-semibold py-2.5 rounded-xl hover:bg-green-700 transition shadow-md shadow-green-200"
+        >
+          Close
+        </button>
+      </motion.div>
+    </div>
+  )}
+</AnimatePresence>
+{/* Settings Modal */}
+<AnimatePresence>
+  {showSettingsModal && (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-999 flex items-center justify-center p-4">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm relative border border-gray-100"
+      >
+        <button 
+          onClick={() => setShowSettingsModal(false)}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <h2 className="text-xl font-bold text-gray-800 mb-4 text-center">Settings</h2>
+
+        <div className="space-y-4 text-sm">
+          <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-between">
+            <div>
+              <p className="font-semibold text-gray-800">Account Status</p>
+              <p className="text-xs text-gray-500">Active and Verified</p>
+            </div>
+            <span className="w-2.5 h-2.5 bg-green-500 rounded-full"></span>
+          </div>
+
+          <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-between">
+            <div>
+              <p className="font-semibold text-gray-800">Role</p>
+              <p className="text-xs text-gray-500 capitalize">{user?.role || "user"}</p>
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setShowSettingsModal(false)}
+          className="w-full mt-6 bg-green-600 text-white font-semibold py-2.5 rounded-xl hover:bg-green-700 transition shadow-md shadow-green-200"
+        >
+          Close
+        </button>
+      </motion.div>
+    </div>
+  )}
+</AnimatePresence>
     </>
   );
 }

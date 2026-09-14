@@ -1,23 +1,22 @@
 'use client'
-import React, { useState } from 'react'
-import { motion } from 'motion/react'
-import { ArrowLeft, Building, CreditCard, CreditCardIcon, Import, Loader2, LocateFixed, MapPin, Navigation, Search, Truck, User } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
+import { ArrowLeft, Building, CreditCard, CreditCardIcon, Loader2, LocateFixed, MapPin, Navigation, Search, Truck, User, Phone, Home } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/redux/store'
-import { Phone } from 'lucide-react'
-import { Home } from 'lucide-react'
-import { useEffect } from 'react'
 import axios from 'axios'
 import dynamic from 'next/dynamic'
+import { useSession } from 'next-auth/react'
 
 const CheckOutMap = dynamic(() => import("@/components/CheckoutMap"), { ssr: false });
 
-
 function Checkout() {
     const router = useRouter()
+    const { data: session } = useSession()
     const { userData } = useSelector((state: RootState) => state.user)
     const { subTotal, deliveryFee, finalTotal, cartData } = useSelector((state: RootState) => state.cart)
+    
     const [address, setAddress] = useState({
         fullName: "",
         mobile: "",
@@ -30,8 +29,9 @@ function Checkout() {
     const [searchQuery, setSearchQuery] = useState("")
     const [position, setPosition] = useState<[number, number] | null>(null)
     const [paymentMethod, setPaymentMethod] = useState<"cod" | "online">("cod")
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
-    // --- Easypaisa states ---
+    // Easypaisa states
     const [epMobileNumber, setEpMobileNumber] = useState("")
     const [epEmail, setEpEmail] = useState("")
     const [epLoading, setEpLoading] = useState(false)
@@ -55,21 +55,33 @@ function Checkout() {
 
     useEffect(() => {
         if (userData) {
-            setAddress((prev) => ({ ...prev, fullName: userData.name || "" }))
-            setAddress((prev) => ({ ...prev, mobile: userData.mobile || "" }))
+            setAddress((prev) => ({ 
+                ...prev, 
+                fullName: userData.name || prev.fullName,
+                mobile: userData.mobile || prev.mobile 
+            }))
+        } else if (session?.user) {
+            setAddress((prev) => ({ 
+                ...prev, 
+                fullName: session.user?.name || prev.fullName,
+            }))
         }
-    }, [userData]);
-
-  
+    }, [userData, session]);
 
     const handleSearchQuery = async () => {
+        if (!searchQuery) return;
         setSearchLoading("true")
-        const {OpenStreetMapProvider}=await import("leaflet-geosearch")
-        const provider = new OpenStreetMapProvider()
-        const results = await provider.search({ query: searchQuery });
-        if (results) {
+        try {
+            const { OpenStreetMapProvider } = await import("leaflet-geosearch")
+            const provider = new OpenStreetMapProvider()
+            const results = await provider.search({ query: searchQuery });
+            if (results && results.length > 0) {
+                setPosition([results[0].y, results[0].x])
+            }
+        } catch (err) {
+            console.error("Search error:", err)
+        } finally {
             setSearchLoading("false")
-            setPosition([results[0].y, results[0].x])
         }
     }
 
@@ -77,8 +89,16 @@ function Checkout() {
         const fetchAddress = async () => {
             if (!position) return
             try {
-                const result = await axios.get(`https://nominatim.openstreetmap.org/reverse?
-                lat=${position[0]}&lon=${position[1]}&format=json`)
+                const result = await axios.get(`https://nominatim.openstreetmap.org/reverse?lat=${position[0]}&lon=${position[1]}&format=json`)
+                if (result.data && result.data.address) {
+                    setAddress(prev => ({
+                        ...prev,
+                        city: result.data.address.city || result.data.address.town || result.data.address.village || prev.city || "Rawalpindi",
+                        state: result.data.address.state || prev.state || "Punjab",
+                        pincode: result.data.address.postcode || prev.pincode || "46000",
+                        fullAddress: result.data.display_name || prev.fullAddress || "Selected Location Address",
+                    }))
+                }
             } catch (error) {
                 console.error("Error fetching address:", error)
             }
@@ -88,40 +108,72 @@ function Checkout() {
 
     const handleCod = async () => {
         if (!position) {
-            return null
+            alert("Please select location on map or allow GPS location first!");
+            return;
         }
+
+        let userId = userData?._id || (session?.user as any)?.id || (session?.user as any)?._id;
+
+        if (!userId) {
+            try {
+                const sessionRes = await axios.get("/api/auth/session");
+                userId = sessionRes.data?.user?.id || sessionRes.data?.user?._id;
+            } catch (err) {
+                console.error("Session fetch error:", err);
+            }
+        }
+
+        if (!userId) {
+            alert("User session not found. Please log in again!");
+            return;
+        }
+
+        if (!cartData || cartData.length === 0) {
+            alert("Your cart is empty!");
+            return;
+        }
+
+        setIsSubmitting(true);
         try {
-            const result = await axios.post("/api/user/order", {
-                userId: userData?._id,
-                items: cartData.map(item => ({
-                    grocery: item._id,
-                    name: item.name,
-                    price: item.price,
-                    unit: item.unit,
-                    image: item.image,
-                    quantity: item.quantity
+            const payload = {
+                user: userId,
+                items: cartData.map((item: any) => ({
+                    grocery: item.grocery || item._id,
+                    name: item.name || "Grocery Item",
+                    price: String(item.price || 0),
+                    unit: item.unit || "1 kg",
+                    image: item.image || "",
+                    quantity: Number(item.quantity) || 1
                 })),
                 paymentMethod: "cod",
-                totalAmount: finalTotal,
+                totalAmount: String(finalTotal),
                 address: {
-                    fullName: address.fullName,
-                    mobile: address.mobile,
-                    city: address.city,
-                    state: address.state,
-                    fullAddress: address.fullAddress,
-                    pincode: address.pincode,
-                    latatitude: position?.[0],
+                    fullName: address.fullName || userData?.name || session?.user?.name || "Customer",
+                    mobile: address.mobile || userData?.mobile || "03000000000",
+                    city: address.city || "Rawalpindi",
+                    state: address.state || "Punjab",
+                    pincode: address.pincode || "46000",
+                    fullAddress: address.fullAddress || "Full Address Provided",
+                    latitude: position[0],
                     longitude: position[1]
-                },
-               
-            })
-            router.push("/user/order-success")
-        } catch (error) {
-            console.error(error)
-        }
-    }
+                }
+            };
 
-    // --- Easypaisa Payment Trigger Function ---
+            console.log("SENDING PAYLOAD TO API:", payload);
+
+            const result = await axios.post("/api/user/order", payload);
+
+            if (result.status === 200 || result.status === 201) {
+                router.push("/user/order-success");
+            }
+        } catch (error: any) {
+            console.error("API ERROR DETAILED:", error?.response?.data);
+            alert(error?.response?.data?.message || "Something went wrong while placing order!");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const handleOnlineOrder = async () => {
         if (!epMobileNumber || !epEmail) {
             setEpSuccess(false)
@@ -140,9 +192,9 @@ function Checkout() {
                 body: JSON.stringify({
                     mobileNumber: epMobileNumber,
                     email: epEmail,
-                    amount: finalTotal.toString(),
+                    amount: String(finalTotal),
                     addressDetails: address,
-                    userId: userData?._id
+                    userId: userData?._id || (session?.user as any)?.id
                 }),
             });
 
@@ -151,8 +203,7 @@ function Checkout() {
             if (data.success) {
                 setEpSuccess(true)
                 setEpMessage("Success! Please check your mobile for the PIN popup and approve the payment.")
-                // Optionally redirect to success page after approval
-                // router.push("/user/order-success")
+                router.push("/user/order-success")
             } else {
                 setEpSuccess(false)
                 setEpMessage(`Error: ${data.error}`)
@@ -160,30 +211,10 @@ function Checkout() {
         } catch (err) {
             setEpSuccess(false)
             setEpMessage("Server error! Please try again.")
-        } {
+        } finally {
             setEpLoading(false)
         }
     }
-
-    useEffect(() => {
-        const fetchAddress = async () => {
-            if (!position) return null
-            try {
-                const result = await axios.get(`https://nominatim.openstreetmap.org/reverse?lat=${position[0]}&lon=${position[1]}&format=json`)
-                console.log(result.data)
-                setAddress(prev => ({
-                    ...prev,
-                    city: result.data.address.city,
-                    state: result.data.address.state,
-                    pincode: result.data.address.postcode,
-                    fullAddress: result.data.display_name,
-                }))
-            } catch (error) {
-                console.log(error)
-            }
-        }
-        fetchAddress()
-    }, [position]);
 
     const handleCurrentLocation = () => {
         if (navigator.geolocation) {
@@ -197,6 +228,14 @@ function Checkout() {
                 },
                 { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
             );
+        }
+    }
+
+    const handlePlaceOrder = () => {
+        if (paymentMethod === "cod") {
+            handleCod()
+        } else {
+            handleOnlineOrder()
         }
     }
 
@@ -230,29 +269,28 @@ function Checkout() {
                         <MapPin className="text-green-700" /> Delivery Address
                     </h2>
                     <div className="space-y-4">
-                        {/* Full Name */}
                         <div className="relative">
                             <User className="absolute left-3 top-3 text-green-600" size={18} />
                             <input
                                 type="text"
                                 value={address.fullName}
                                 onChange={(e) => setAddress((prev) => ({ ...prev, fullName: e.target.value }))}
-                                className="pl-10 w-full border rounded-lg p-3 text-sm bg-gray-50"
+                                className="pl-10 w-full border rounded-lg p-3 text-sm bg-gray-50 outline-none focus:ring-2 focus:ring-green-500"
+                                placeholder="Full Name"
                             />
                         </div>
 
-                        {/* Phone Number */}
                         <div className="relative">
                             <Phone className="absolute left-3 top-3 text-green-600" size={18} />
                             <input
                                 type="text"
                                 value={address.mobile}
                                 onChange={(e) => setAddress((prev) => ({ ...prev, mobile: e.target.value }))}
-                                className="pl-10 w-full border rounded-lg p-3 text-sm bg-gray-50"
+                                className="pl-10 w-full border rounded-lg p-3 text-sm bg-gray-50 outline-none focus:ring-2 focus:ring-green-500"
+                                placeholder="Mobile Number"
                             />
                         </div>
 
-                        {/* Street Address */}
                         <div className="relative">
                             <Home className="absolute left-3 top-3 text-green-600" size={18} />
                             <input
@@ -260,64 +298,71 @@ function Checkout() {
                                 value={address.fullAddress}
                                 placeholder='Full Address'
                                 onChange={(e) => setAddress((prev) => ({ ...prev, fullAddress: e.target.value }))}
-                                className="pl-10 w-full border rounded-lg p-3 text-sm bg-gray-50"
+                                className="pl-10 w-full border rounded-lg p-3 text-sm bg-gray-50 outline-none focus:ring-2 focus:ring-green-500"
                             />
                         </div>
-                        <div className='grid grid-cols-3 gap-3'></div>
-                        {/* City */}
+
                         <div className="relative">
                             <Building className="absolute left-3 top-3 text-green-600" size={18} />
                             <input
                                 type="text"
                                 value={address.city}
-                                placeholder='city'
+                                placeholder='City'
                                 onChange={(e) => setAddress((prev) => ({ ...prev, city: e.target.value }))}
-                                className="pl-10 w-full border rounded-lg p-3 text-sm bg-gray-50"
+                                className="pl-10 w-full border rounded-lg p-3 text-sm bg-gray-50 outline-none focus:ring-2 focus:ring-green-500"
                             />
                         </div>
+
                         <div className="relative">
                             <Navigation className="absolute left-3 top-3 text-green-600" size={18} />
                             <input
                                 type="text"
                                 value={address.state}
-                                placeholder='state'
+                                placeholder='State'
                                 onChange={(e) => setAddress((prev) => ({ ...prev, state: e.target.value }))}
-                                className="pl-10 w-full border rounded-lg p-3 text-sm bg-gray-50"
+                                className="pl-10 w-full border rounded-lg p-3 text-sm bg-gray-50 outline-none focus:ring-2 focus:ring-green-500"
                             />
                         </div>
+
                         <div className="relative">
                             <Search className="absolute left-3 top-3 text-green-600" size={18} />
                             <input
                                 type="text"
                                 value={address.pincode}
-                                placeholder='pincode'
+                                placeholder='Pincode'
                                 onChange={(e) => setAddress((prev) => ({ ...prev, pincode: e.target.value }))}
-                                className="pl-10 w-full border rounded-lg p-3 text-sm bg-gray-50"
+                                className="pl-10 w-full border rounded-lg p-3 text-sm bg-gray-50 outline-none focus:ring-2 focus:ring-green-500"
                             />
                         </div>
 
                         <div className="flex gap-2 mt-3">
-                            <input type="text" placeholder="search city or area..."
-                                className="flex-1 border rounded-lg p-3 text-sm focus:ring-2 focus:ring-green-500 outline-none" value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)} />
-
-                            <button className="bg-green-600 text-white px-5 rounded-lg hover:bg-green-700 transition-all font-medium"
-                                onClick={handleSearchQuery}>{searchLoading === "true" ? <Loader2 size={16}
-                                    className='animate-spin' /> : "Search"}</button>
+                            <input 
+                                type="text" 
+                                placeholder="Search city or area..."
+                                className="flex-1 border rounded-lg p-3 text-sm focus:ring-2 focus:ring-green-500 outline-none" 
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)} 
+                            />
+                            <button 
+                                type="button"
+                                className="bg-green-600 text-white px-5 rounded-lg hover:bg-green-700 transition-all font-medium flex items-center justify-center"
+                                onClick={handleSearchQuery}
+                            >
+                                {searchLoading === "true" ? <Loader2 size={16} className='animate-spin' /> : "Search"}
+                            </button>
                         </div>
-                        <div className='relative mt-6 h-[330px] rounded-xl overflow-hidden border border-gray-200 shadow-inner' >
-                            {position &&  <CheckOutMap position={position} setPosition={setPosition}/>}
-                              
 
-                                    <motion.button
-                                        whileTap={{ scale: 0.93 }}
-                                        className='absolute bottom-4 right-4 bg-green-600 text-white shadow-lg rounded-full p-3
-                                     hover:bg-green-700 transition-all flex items-center justify-center z-[999]'
-                                        onClick={handleCurrentLocation}
-                                    >
-                                        <LocateFixed size={22} />
-                                    </motion.button>
-
+                        <div className='relative mt-6 h-[330px] rounded-xl overflow-hidden border border-gray-200 shadow-inner'>
+                            {position && <CheckOutMap position={position} setPosition={setPosition}/>}
+                            
+                            <motion.button
+                                type="button"
+                                whileTap={{ scale: 0.93 }}
+                                className='absolute bottom-4 right-4 bg-green-600 text-white shadow-lg rounded-full p-3 hover:bg-green-700 transition-all flex items-center justify-center z-10'
+                                onClick={handleCurrentLocation}
+                            >
+                                <LocateFixed size={22} />
+                            </motion.button>
                         </div>
                     </div>
                 </motion.div>
@@ -332,31 +377,31 @@ function Checkout() {
                         <CreditCard className='text-green-600' />
                         Payment Method
                     </h2>
+
                     <div className='space-y-4 mb-6'>
                         <button
+                            type="button"
                             onClick={() => setPaymentMethod("online")}
-                            className={`flex items-center gap-3 w-full border rounded-lg p-3 transition-all ${paymentMethod === "online"
-                                ? "border-green-600 bg-green-50 shadow-sm"
-                                : "hover:bg-gray-50"
-                                }`}
+                            className={`flex items-center gap-3 w-full border rounded-lg p-3 transition-all ${
+                                paymentMethod === "online" ? "border-green-600 bg-green-50 shadow-sm" : "hover:bg-gray-50"
+                            }`}
                         >
                             <CreditCardIcon className='text-green-700' />
                             <span className='font-medium text-gray-700'>Pay Online</span>
                         </button>
 
                         <button
+                            type="button"
                             onClick={() => setPaymentMethod("cod")}
-                            className={`flex items-center gap-3 w-full border rounded-lg p-3 transition-all ${paymentMethod === "cod"
-                                ? "border-green-600 bg-green-50 shadow-sm"
-                                : "hover:bg-gray-50"
-                                }`}
+                            className={`flex items-center gap-3 w-full border rounded-lg p-3 transition-all ${
+                                paymentMethod === "cod" ? "border-green-600 bg-green-50 shadow-sm" : "hover:bg-gray-50"
+                            }`}
                         >
                             <Truck className='text-green-700' />
                             <span className='font-medium text-gray-700'>Cash on Delivery</span>
                         </button>
                     </div>
 
-                    {/* --- Easypaisa Inputs (shown when online is selected) --- */}
                     {paymentMethod === "online" && (
                         <motion.div
                             initial={{ opacity: 0, y: -10 }}
@@ -408,21 +453,16 @@ function Checkout() {
                     </div>
 
                     <motion.button
+                        type="button"
                         whileTap={{ scale: 0.93 }}
-                        className='w-full mt-6 bg-green-600 text-white py-3 rounded-full hover:bg-green-700 transition-all font-semibold disabled:bg-gray-400 flex items-center justify-center gap-2'
-                        disabled={paymentMethod === "online" && epLoading}
-                        onClick={() => {
-                            if (paymentMethod === "cod") {
-                                handleCod()
-                            } else {
-                                handleOnlineOrder()
-                            }
-                        }}
+                        className='w-full mt-6 bg-green-600 text-white py-3 rounded-full hover:bg-green-700 transition-all font-semibold disabled:bg-gray-400 flex items-center justify-center gap-2 cursor-pointer'
+                        disabled={isSubmitting || (paymentMethod === "online" && epLoading)}
+                        onClick={handlePlaceOrder}
                     >
-                        {paymentMethod === "online" && epLoading ? (
+                        {isSubmitting || (paymentMethod === "online" && epLoading) ? (
                             <>
                                 <Loader2 size={18} className='animate-spin' />
-                                <span>Processing...</span>
+                                <span>Processing Order...</span>
                             </>
                         ) : (
                             paymentMethod === "cod" ? "Place Order" : "Pay & Place Order"
@@ -434,4 +474,4 @@ function Checkout() {
     )
 }
 
-export default Checkout
+export default Checkout;

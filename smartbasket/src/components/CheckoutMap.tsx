@@ -1,51 +1,65 @@
 'use client'
 import React, { useEffect } from 'react'
-import { MapContainer, Marker, TileLayer, useMap } from 'react-leaflet'
-import L, { LatLngExpression } from 'leaflet'
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet'
+import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { Proportions } from 'lucide-react'
-const markerIcon = new L.Icon({
-    iconUrl: "https://www.flaticon.com/free-icon/placeholder_684908.png",
-    iconSize: [40, 40],
-    iconAnchor: [20, 40]
+
+// Leaflet marker default icons fix
+const customIcon = L.icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
 })
-type props ={
-    position: [number, number],
+
+interface MapProps {
+  position: [number, number]
   setPosition: (pos: [number, number]) => void
 }
-function CheckoutMap({ position, setPosition}: props) {
-      const DraggableMarker: React.FC = () => {
-            const map = useMap()
-            useEffect(() => {
-                if (position) {
-                    map.setView(position as LatLngExpression, 15, { animate: true })
-                }
-            }, [position, map]);
-            return (
-                <Marker
-                    icon={markerIcon}
-                    position={position as LatLngExpression}
-                    draggable={true}
-                    eventHandlers={{
-                        dragend: (e: L.LeafletEvent) => {
-                            const marker = e.target as L.Marker
-                            const { lat, lng } = marker.getLatLng()
-                            setPosition([lat, lng])
-                        }
-                    }}
-                />
-            )
-        }
-  return (
-    <MapContainer center={position as LatLngExpression}
-                                      zoom={13} scrollWheelZoom={true} className='w-full h-full'>
-                                      <TileLayer
-                                          attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
-                                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                      />
-                                      <DraggableMarker />
-                                       </MapContainer>
-  )
+
+function MapEvents({ setPosition }: { setPosition: (pos: [number, number]) => void }) {
+  useMapEvents({
+    click(e) {
+      setPosition([e.latlng.lat, e.latlng.lng])
+    },
+  })
+  return null
 }
 
-export default CheckoutMap
+function RecenterMap({ position }: { position: [number, number] }) {
+  const map = useMap()
+  useEffect(() => {
+    if (position && position[0] && position[1]) {
+      map.setView(position, map.getZoom())
+    }
+  }, [position, map])
+  return null
+}
+
+export default function CheckOutMap({ position, setPosition }: MapProps) {
+  if (!position || !position[0] || !position[1]) {
+    return (
+      <div className="w-full h-full bg-gray-100 flex items-center justify-center text-sm text-gray-500">
+        Loading Map Location...
+      </div>
+    )
+  }
+
+  return (
+    <MapContainer
+      center={position}
+      zoom={13}
+      scrollWheelZoom={true}
+      style={{ height: '100%', width: '100%' }}
+    >
+      <TileLayer
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+      <Marker position={position} icon={customIcon} />
+      <MapEvents setPosition={setPosition} />
+      <RecenterMap position={position} />
+    </MapContainer>
+  )
+}

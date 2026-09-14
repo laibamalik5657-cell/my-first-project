@@ -1,5 +1,5 @@
 'use client'
-import { ArrowLeft,Minus,Plus, ShoppingBasket } from 'lucide-react'
+import { ArrowLeft,Minus,Plus, ShoppingBasket,Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import React from 'react'
 import { AnimatePresence, motion } from 'motion/react'
@@ -93,7 +93,7 @@ function CartPage() {
         <Plus className='size={14} text-green-700' />
     </button>
 </div>
-<button className='sm-ml-4  mt-3  sm:mt-0 text-red-500 hover:text-red-700 transition-all' onClick={()=>dispatch(removeFromCart(item._id))}>Trash2 size={18}</button>
+<button className='sm-ml-4  mt-3  sm:mt-0 text-red-500 hover:text-red-700 transition-all' onClick={()=>dispatch(removeFromCart(item._id))}><Trash2 size={18}/></button>
                   
                 </motion.div>
               ))}

@@ -12,57 +12,67 @@ import User from '@/models/user.model'
 import { redirect } from 'next/navigation'
 import React from 'react'
 
-async function Home(props:{
-    searchParams:Promise<{
-        q:string
+async function Home(props: {
+    searchParams: Promise<{
+        q?: string
     }>
 }) {
-    const searchParams=await props.searchParams
+    const searchParams = await props.searchParams
 
-  await connectDb()
-  const session = await auth()
-  const user = await User.findById(session?.user?.id)
+    await connectDb()
+    const session = await auth()
 
-  if (!user) {
-    redirect("/login")
-  }
+    if (!session?.user?.id) {
+        redirect("/login")
+    }
 
-  const inComplete = !user.mobile || !user.role || (!user.mobile && user.role == "user")
+    const user = await User.findById(session.user.id).lean()
 
-  if (inComplete) {
-    return <EditRoleMobile />
-  }
-  const plainuser = JSON.parse(JSON.stringify(user))
-  const plainUser = JSON.parse(JSON.stringify(user))
+    if (!user) {
+        redirect("/login")
+    }
 
-let groceryList: IGrocery[] = []
-const NavComponent = Nav as React.ComponentType<any>
+    const inComplete = !user.mobile || !user.role || (!user.mobile && user.role === "user")
 
-if (user.role === "user") {
-    if (searchParams.q) {
-        groceryList = await Grocery.find({
-            $or: [
-                { name: { $regex: searchParams?.q || "", $options: "i" } },
-                { category: { $regex: searchParams?.q || "", $options: "i" } },
-            ]
-        })
-    }else{
-    groceryList=await Grocery.find({}).lean()
+    if (inComplete) {
+        return <EditRoleMobile />
+    }
+
+    const plainUser = JSON.parse(JSON.stringify(user))
+    let groceryList: IGrocery[] = []
+    const NavComponent = Nav as React.ComponentType<any>
+
+    if (user.role === "user") {
+        let rawGroceryList: any[]  = []
+        if (searchParams?.q) {
+            rawGroceryList = await Grocery.find({
+                $or: [
+                    { name: { $regex: searchParams.q, $options: "i" } },
+                    { category: { $regex: searchParams.q, $options: "i" } },
+                ]
+            }).lean()
+        } else {
+            rawGroceryList = await Grocery.find({}).lean()
+        }
+
+        
+        groceryList = JSON.parse(JSON.stringify(rawGroceryList))
+    }
+
+    return (
+        <>
+            <NavComponent user={plainUser} />
+            <GeoUpdater userId={plainUser?._id} />
+            {user.role === "user" ? (
+                <UserDashboard groceryList={groceryList} />
+            ) : user.role === "admin" ? (
+                <AdminDashboard />
+            ) : (
+                <DeliveryBoy />
+            )}
+            <Footer />
+        </>
+    )
 }
 
-
-  return (
-    <>
-      <NavComponent user={plainuser} />
-      <GeoUpdater userId={plainuser?._id} />
-      {user.role == "user" ? (
-       <UserDashboard groceryList={groceryList}/>
-      ) : user.role == "admin" ? (
-        <AdminDashboard />
-      ) : <DeliveryBoy />}
-          <Footer/>
-    </>
-  )
-}
-}
 export default Home

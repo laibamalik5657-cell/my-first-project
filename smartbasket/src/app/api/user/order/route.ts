@@ -1,7 +1,6 @@
 import connectDb from "@/lib/db";
 import User from "@/models/user.model";
 import Order from "@/models/order.model";
-
 import { NextRequest, NextResponse } from "next/server";
 import emitEventHandler from "@/lib/emitEventHandler";
 
