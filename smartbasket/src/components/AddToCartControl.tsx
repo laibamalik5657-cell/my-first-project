@@ -17,11 +17,7 @@ interface IGrocery {
     stock?: number
 }
 
-/**
- * Add-to-cart button that turns into a quantity stepper once the item is in the
- * cart. Shared by the product card and the product detail page so the stock
- * clamping only has to be right in one place.
- */
+
 function AddToCartControl({ item, size = "sm" }: { item: IGrocery; size?: "sm" | "lg" }) {
     const dispatch = useDispatch<AppDispatch>()
     const { cartData } = useSelector((state: RootState) => state.cart)
@@ -47,7 +43,7 @@ function AddToCartControl({ item, size = "sm" }: { item: IGrocery; size?: "sm" |
             <motion.button
                 className={`mt-4 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white rounded-full font-medium transition-all w-full ${size === "lg" ? "py-3 text-base" : "py-2 text-sm"}`}
                 whileTap={{ scale: 0.96 }}
-                onClick={() => dispatch(addToCart({ ...item, stock, quantity: 1 }))}
+                onClick={() => dispatch(addToCart({ ...item, stock, quantity: Math.min(7, stock || 7) }))}
             >
                 <ShoppingCart size={size === "lg" ? 20 : 16} /> Add to Cart
             </motion.button>
@@ -78,7 +74,11 @@ function AddToCartControl({ item, size = "sm" }: { item: IGrocery; size?: "sm" |
                 disabled={atStockLimit}
                 title={atStockLimit ? `Only ${stock} left in stock` : undefined}
                 className="w-7 h-7 flex items-center justify-center rounded-full bg-green-100 hover:bg-green-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                onClick={() => dispatch(increaseQuantity(String(item._id)))}
+                onClick={() => {
+    if (cartItem.quantity < 7) {
+        dispatch(increaseQuantity(String(item._id)));
+    }
+}}
             >
                 <Plus size={16} className="text-green-700" />
             </button>
