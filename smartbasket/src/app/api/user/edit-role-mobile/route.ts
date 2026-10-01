@@ -3,7 +3,7 @@ import connectDb from "@/lib/db";
 import User from "@/models/user.model";
 import { NextRequest, NextResponse } from "next/server";
 
-// All four roles are available for self-selection during initial onboarding.
+
 const SELF_ASSIGNABLE_ROLES = ["user", "deliveryBoy", "shopkeeper", "admin"] as const
 
 export async function POST(req: NextRequest) {
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
         { status: 403 }
       )
     }
-    // Preserve roles already assigned by an admin when completing a profile.
+   
     const nextRole = existingUser.role === "user" ? role : existingUser.role
     if (existingUser.role === "user" && !SELF_ASSIGNABLE_ROLES.includes(nextRole)) {
       return NextResponse.json(

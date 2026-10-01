@@ -77,8 +77,18 @@ export default function ManageUsers() {
       <div className="mb-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
         <Link href="/" className="flex items-center justify-center gap-2 bg-green-100 hover:bg-green-200 text-green-700 font-semibold px-4 py-2 rounded-full transition w-full sm:w-auto"><ArrowLeft size={18} /> Dashboard</Link>
         <h1 className="text-2xl md:text-3xl font-extrabold text-green-700 flex items-center justify-center gap-2"><Users size={20} /> Manage Users</h1>
-        <button onClick={() => open('create')} className="inline-flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-2 rounded-full font-semibold hover:bg-green-700 transition w-full sm:w-auto"><Plus size={18} /> Add User</button>
-      </div>
+<button 
+  onClick={() => {
+    if (users.length > 0) {
+      open('delete', users[0]);
+    } else {
+      alert("Koi user mojood nahi hai!");
+    }
+  }} 
+  className="inline-flex items-center justify-center gap-2 bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2.5 rounded-full font-semibold transition w-full sm:w-auto"
+>
+  <Trash2 size={18} /> Delete User
+</button>      </div>
       <div className="mb-10 mx-auto flex max-w-3xl flex-col gap-3 sm:flex-row"><label className="flex flex-1 items-center gap-2 rounded-full border border-gray-200 bg-white px-5 py-3 shadow-sm"><Search size={18} className="text-gray-500" /><input aria-label="Search users" value={search} onChange={event => { setSearch(event.target.value); setPage(1) }} placeholder="Search name, email or mobile..." className="min-w-0 flex-1 text-sm text-gray-700 outline-none placeholder:text-gray-400" /></label><select aria-label="Filter by role" value={role} onChange={event => { setRole(event.target.value); setPage(1) }} className="rounded-full border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 shadow-sm outline-none focus:ring-2 focus:ring-green-500"><option value="">All roles</option>{roles.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select></div>
       {notice && <p role="status" className="mb-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</p>}
       {error && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
