@@ -1,10 +1,13 @@
 'use client'
-import React, {  useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { motion } from "motion/react"
 import { Bike, User, ArrowRight, Loader2, Store, ShieldCheck } from 'lucide-react'
 import axios from 'axios'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+
+// Component ke bahar Regex define ki hai taake baar baar recreate na ho (Performance Fix)
+const PK_PHONE_REGEX = /^((\+92)|(0092)|(0))?3[0-9]{9}$/
 
 function EditRoleMobile({ assignedRole = "user" }: { assignedRole?: string }) {
   const router = useRouter()
@@ -22,16 +25,25 @@ function EditRoleMobile({ assignedRole = "user" }: { assignedRole?: string }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
+  // Cached phone validation check
+  const isValidPhone = useMemo(() => {
+    return PK_PHONE_REGEX.test(mobile.trim())
+  }, [mobile])
+
   const handleEdit = async () => {
+    if (!isValidPhone) {
+      setError("Please enter a valid mobile number (e.g. 03001234567)")
+      return
+    }
+
     setLoading(true)
     setError("")
     try {
       await axios.post("/api/user/edit-role-mobile", {
         role: selectedRole,
-        mobile
+        mobile: mobile.trim()
       })
-      // the jwt callback re-reads the role from the database; the payload is
-      // only a trigger
+      
       await update({ role: selectedRole })
       router.push("/")
       router.refresh()
@@ -41,12 +53,13 @@ function EditRoleMobile({ assignedRole = "user" }: { assignedRole?: string }) {
       setLoading(false)
     }
   }
+
   return (
     <div className='flex flex-col items-center min-h-screen p-6 w-full justify-center bg-gray-50'>
       <motion.h1
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
+        transition={{ duration: 0.4 }}
         className='text-3xl md:text-4xl font-extrabold text-green-700 text-center mt-8'
       >
         {assignedRole === "user" ? "Select Your Role" : "Complete Your Profile"}
@@ -62,9 +75,9 @@ function EditRoleMobile({ assignedRole = "user" }: { assignedRole?: string }) {
               type="button"
               aria-pressed={isSelected}
               key={role.id}
-              whileTap={{ scale: 0.94 }}
+              whileTap={{ scale: 0.96 }}
               onClick={() => setSelectedRole(role.id)}
-              className={`flex flex-col items-center justify-center w-48 h-44 rounded-2xl border-2 cursor-pointer transition-all focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-green-700 ${
+              className={`flex flex-col items-center justify-center w-48 h-44 rounded-2xl border-2 cursor-pointer transition-all ${
                 isSelected
                   ? "border-green-600 bg-green-100 shadow-lg"
                   : "border-gray-300 bg-white hover:border-green-400"
@@ -78,9 +91,9 @@ function EditRoleMobile({ assignedRole = "user" }: { assignedRole?: string }) {
       </div>}
 
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5, duration: 0.6 }}
+        transition={{ delay: 0.2, duration: 0.4 }}
         className='flex flex-col items-center mt-10'
       >
         <label htmlFor="mobile" className='text-gray-700 font-medium mb-2'>
@@ -90,19 +103,29 @@ function EditRoleMobile({ assignedRole = "user" }: { assignedRole?: string }) {
           type="tel"
           id="mobile"
           value={mobile}
-          className='w-64 md:w-80 px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-500 focus:outline-none text-gray-800'
-          placeholder='eg. 00000000000'
-          onChange={(e) => setMobile(e.target.value)}
+          className={`w-64 md:w-80 px-4 py-3 rounded-xl border focus:ring-2 focus:outline-none text-gray-800 transition-colors ${
+            mobile && !isValidPhone
+              ? "border-red-500 focus:ring-red-400"
+              : "border-gray-300 focus:ring-green-500"
+          }`}
+          placeholder='e.g. 03001234567'
+          onChange={(e) => {
+            setMobile(e.target.value)
+            if (error) setError("")
+          }}
         />
+        {mobile && !isValidPhone && (
+          <p className="text-red-500 text-xs mt-1">Please enter a valid phone number (e.g. 03001234567)</p>
+        )}
       </motion.div>
 
       <motion.button
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7 }}
-        disabled={!(selectedRole && /^\d{10,15}$/.test(mobile)) || loading}
-        className={`inline-flex items-center justify-center gap-2 font-semibold py-3 px-8 rounded-2xl shadow-md transition-all duration-200 w-[200px] mt-20 ${
-          selectedRole && /^\d{10,15}$/.test(mobile) && !loading
+        transition={{ delay: 0.3 }}
+        disabled={!(selectedRole && isValidPhone) || loading}
+        className={`inline-flex items-center justify-center gap-2 font-semibold py-3 px-8 rounded-2xl shadow-md transition-all duration-200 w-[200px] mt-10 ${
+          selectedRole && isValidPhone && !loading
             ? "bg-green-600 hover:bg-green-700 text-white cursor-pointer"
             : "bg-gray-300 text-gray-500 cursor-not-allowed"
         }`}

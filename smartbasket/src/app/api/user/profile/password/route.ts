@@ -1,49 +1,71 @@
 import { auth } from "@/auth";
 import connectDb from "@/lib/db";
 import User from "@/models/user.model";
-import bcrypt from "bcryptjs";
-import { validatePassword } from "@/lib/password";
 import { NextRequest, NextResponse } from "next/server";
 
-/** Change your own password. The current password must be supplied and match. */
-export async function POST(req: NextRequest) {
+// Regex for Pakistani mobile numbers: 03001234567, +923001234567, 923001234567
+const PK_MOBILE_REGEX = /^((\+92)|(92)|(0))3\d{9}$/;
+
+export async function PUT(req: NextRequest) {
     try {
-        await connectDb()
-        const session = await auth()
+        await connectDb();
+        const session = await auth();
+
         if (!session?.user?.id) {
-            return NextResponse.json({ message: "unauthorized" }, { status: 401 })
+            return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
         }
 
-        const { currentPassword, newPassword } = await req.json()
+        const { name, mobile, address } = await req.json();
 
-        const strengthError = validatePassword(newPassword)
-        if (strengthError) {
-            return NextResponse.json({ message: strengthError }, { status: 400 })
-        }
-
-        const user = await User.findById(session.user.id)
-        if (!user) {
-            return NextResponse.json({ message: "user not found" }, { status: 404 })
-        }
-        if (!user.password) {
+        // 1. Name validation
+        if (!name || name.trim().length < 2) {
             return NextResponse.json(
-                { message: "This account signs in with Google and has no password to change" },
+                { message: "Name must be at least 2 characters" },
                 { status: 400 }
-            )
+            );
         }
 
-        if (typeof currentPassword !== "string" || !(await bcrypt.compare(currentPassword, user.password))) {
-            return NextResponse.json({ message: "Your current password is incorrect" }, { status: 400 })
+        // 2. Strict Pakistani Mobile Number Validation
+        if (!mobile || !PK_MOBILE_REGEX.test(mobile.trim())) {
+            return NextResponse.json(
+                { message: "Invalid mobile number. Only valid Pakistani phone numbers are allowed (e.g., 03001234567 or +923001234567)." },
+                { status: 400 }
+            );
         }
 
-        user.password = await bcrypt.hash(newPassword, 10)
-        // any outstanding reset link is no longer valid
-        user.resetPasswordTokenHash = null
-        user.resetPasswordExpiresAt = null
-        await user.save()
+        // 3. User update logic
+        const user = await User.findById(session.user.id);
+        if (!user) {
+            return NextResponse.json({ message: "User not found" }, { status: 404 });
+        }
 
-        return NextResponse.json({ message: "Password changed" }, { status: 200 })
+        user.name = name.trim();
+        user.mobile = mobile.trim();
+        if (address !== undefined) {
+            user.address = address.trim();
+        }
+
+        await user.save();
+
+        // Pass updated user data without sensitive fields
+        const updatedUser = {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            mobile: user.mobile,
+            address: user.address,
+            role: user.role,
+            image: user.image,
+        };
+
+        return NextResponse.json(
+            { message: "Profile updated successfully", user: updatedUser },
+            { status: 200 }
+        );
     } catch (error) {
-        return NextResponse.json({ message: `change password error ${error}` }, { status: 500 })
+        return NextResponse.json(
+            { message: `Profile update error: ${error}` },
+            { status: 500 }
+        );
     }
 }

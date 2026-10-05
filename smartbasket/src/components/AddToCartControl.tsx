@@ -74,7 +74,11 @@ function AddToCartControl({ item, size = "sm" }: { item: IGrocery; size?: "sm" |
                 disabled={atStockLimit}
                 title={atStockLimit ? `Only ${stock} left in stock` : undefined}
                 className="w-7 h-7 flex items-center justify-center rounded-full bg-green-100 hover:bg-green-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+<<<<<<< Updated upstream
                 onClick={() => {
+=======
+               onClick={() => {
+>>>>>>> Stashed changes
     if (cartItem.quantity < 7) {
         dispatch(increaseQuantity(String(item._id)));
     }

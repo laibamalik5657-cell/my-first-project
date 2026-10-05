@@ -6,6 +6,9 @@ import { NextRequest, NextResponse } from "next/server";
 // All four roles are available for self-selection during initial onboarding.
 const SELF_ASSIGNABLE_ROLES = ["user", "deliveryBoy", "shopkeeper", "admin"] as const
 
+// Pakistani Mobile Number Regex (Allows 03001234567, +923001234567, 00923001234567, 3001234567)
+const PK_PHONE_REGEX = /^((\+92)|(0092)|(0))?3[0-9]{9}$/;
+
 export async function POST(req: NextRequest) {
   try {
     await connectDb();
@@ -38,16 +41,18 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    if (typeof mobile !== "string" || !/^\d{10,15}$/.test(mobile)) {
+    // Strict Pakistani Phone Number Validation
+    const cleanMobile = typeof mobile === "string" ? mobile.trim() : "";
+    if (!cleanMobile || !PK_PHONE_REGEX.test(cleanMobile)) {
       return NextResponse.json(
-        { message: "Enter a valid mobile number" },
+        { message: "Please enter a valid Pakistani mobile number (e.g. 03001234567 or +923001234567)" },
         { status: 400 }
       );
     }
 
     const user = await User.findOneAndUpdate(
       { _id: existingUser._id, role: existingUser.role, mobile: existingUser.mobile, isActive: { $ne: false } },
-      { role: nextRole, mobile },
+      { role: nextRole, mobile: cleanMobile },
       { returnDocument: "after" }
     ).select("-password");
 
