@@ -20,13 +20,20 @@ export async function proxy(req: NextRequest) {
     loginUrl.searchParams.set("callbackUrl", req.url)
     return NextResponse.redirect(loginUrl)
   }
-  const role = session.user?.role
+const role = session.user?.role
 
-if (pathname.startsWith("/user") && role !== "user") {
-  return NextResponse.redirect(new URL("/unauthorized", req.url))
+// Allow all logged-in roles to access Settings
+if (
+  pathname === "/user/settings" ||
+  pathname === "/user/settings/"
+) {
+  return NextResponse.next()
 }
 
-if (pathname.startsWith("/delivery") && role !== "deliveryBoy") {
+if (
+  pathname.startsWith("/user") &&
+  !["user", "admin", "shopkeeper", "deliveryBoy"].includes(role || "")
+) {
   return NextResponse.redirect(new URL("/unauthorized", req.url))
 }
 

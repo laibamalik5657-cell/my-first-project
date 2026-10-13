@@ -16,7 +16,6 @@ export interface IOrder {
     isPaid:boolean
     totalAmount: string,
     paymentMethod: "cod" | "online"
-    /** Cloudinary URL of the customer's uploaded transaction screenshot, for online payments */
     paymentProof?: string
 
 address: {
@@ -31,7 +30,7 @@ address: {
 }
 assignment?:mongoose.Types.ObjectId
 assignedDeliveryBoy?:mongoose.Types.ObjectId
-status: "pending" | "out of delivery" | "delivered" | "cancelled",
+status: "pending" | "out for delivery" | "delivered" | "cancelled",
 cancelledAt?: Date
 createdAt?: Date
 updatedAt?: Date
@@ -47,8 +46,7 @@ const orderSchema = new mongoose.Schema<IOrder>({
         ref: "User",
         required: true
     },
-    // cod orders are settled on delivery and don't need this; online orders start
-    // unpaid until an admin verifies the uploaded transaction screenshot.
+
     isPaid: {
         type: Boolean,
         default: false
@@ -101,7 +99,7 @@ const orderSchema = new mongoose.Schema<IOrder>({
        },
     status: {
         type: String,
-        enum: ["pending", "out of delivery", "delivered", "cancelled"],
+        enum: ["pending", "out for delivery", "delivered", "cancelled"],
         default: "pending"
     },
     cancelledAt: {
@@ -116,7 +114,7 @@ deliveryOtpExpiresAt:{
     type:Date,
     default:null
 },
-// wrong tries since the current OTP was issued; locks the code at the limit
+
 deliveryOtpAttempts:{
     type:Number,
     default:0

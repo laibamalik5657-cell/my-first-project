@@ -23,8 +23,7 @@ export async function GET(
         }
 
         const viewerId = String(session.user.id)
-        const allowed =
-            session.user.role === "admin" ||
+        const allowed = session.user.role === "admin" ||
             String(order.user) === viewerId ||
             String(order.assignedDeliveryBoy ?? "") === viewerId
 

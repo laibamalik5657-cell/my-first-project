@@ -1,13 +1,12 @@
 'use client'
 import React, { useState } from 'react'
 import { motion } from 'motion/react'
-// local IOrder defined below; avoid importing server-side types
 import { CheckCircle2, ChevronDown, ChevronUp, CreditCard, Loader2, MapPin, Package, Phone, Truck, User, UserCheck } from 'lucide-react'
 import Image from 'next/image'
 import { IUser } from '@/models/user.model'
 import axios from 'axios'
 
-// Use plain strings for IDs in the client to avoid referencing mongoose server-side types
+
 interface IOrder {
     _id?: string
     user: string
@@ -36,7 +35,7 @@ interface IOrder {
     }
     assignment?: string
     assignedDeliveryBoy?: IUser;
-    status: "pending" | "out of delivery" | "delivered",
+    status: "pending" | "out for delivery" | "delivered",
     createdAt?: string | Date
     updatedAt?: string | Date
 }
@@ -44,11 +43,11 @@ interface IOrder {
 const STATUS_STYLES: Record<string, string> = {
     delivered: "bg-emerald-50 text-emerald-700 border border-emerald-200",
     pending: "bg-amber-50 text-amber-800 border border-amber-200",
-    "out of delivery": "bg-sky-50 text-sky-700 border border-sky-200",
+    "out for delivery": "bg-sky-50 text-sky-700 border border-sky-200",
 }
 
 function AdminOrderCard({ order }: { order: IOrder }) {
-    const statusOption = ["pending", "out of delivery"]
+    const statusOption = ["pending", "out for delivery"]
     const [status, setStatus] = useState<string>(order.status)
     const [syncedStatus, setSyncedStatus] = useState<string>(order.status)
     const [expanded, setExpanded] = useState<boolean>(false)
@@ -58,7 +57,7 @@ function AdminOrderCard({ order }: { order: IOrder }) {
     const [approving, setApproving] = useState<boolean>(false)
     const [approveError, setApproveError] = useState<string>('')
 
-    // Keep local status/paid state in sync when the order prop changes, without an effect.
+  
     if (order.status !== syncedStatus) {
         setSyncedStatus(order.status)
         setStatus(order.status)
@@ -129,15 +128,15 @@ function AdminOrderCard({ order }: { order: IOrder }) {
                     <div className="grid gap-1.5 text-sm text-gray-600">
                         <p className="flex items-center gap-2">
                             <User size={15} className="shrink-0 text-emerald-600" />
-                            <span className="font-medium text-slate-800">{order?.address.fullName}</span>
+                            <span className="font-medium text-slate-800">{order?.address?.fullName}</span>
                         </p>
                         <p className="flex items-center gap-2">
                             <Phone size={15} className="shrink-0 text-emerald-600" />
-                            <span>{order?.address.mobile}</span>
+                            <span>{order?.address?.mobile}</span>
                         </p>
                         <p className="flex items-center gap-2 ">
                             <MapPin size={15} className="mt-0.5 shrink-0 text-emerald-600" />
-                            <span className="leading-5">{order?.address.fullAddress}</span>
+                            <span className="leading-5">{order?.address?.fullAddress}</span>
                         </p>
                         <p className="flex items-center gap-2">
                             <CreditCard size={15} className="shrink-0 text-emerald-600" />

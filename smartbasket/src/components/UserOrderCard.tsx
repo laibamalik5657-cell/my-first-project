@@ -9,7 +9,7 @@ import type { CustomerOrder, OrderStatus } from '@/types/customer-order'
 
 const statuses = {
   pending: { label: 'Preparing', color: 'border-amber-200 bg-amber-50 text-amber-800' },
-  'out of delivery': { label: 'On the way', color: 'border-blue-200 bg-blue-50 text-blue-700' },
+  'out for delivery': { label: 'On the way', color: 'border-blue-200 bg-blue-50 text-blue-700' },
   delivered: { label: 'Delivered', color: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
   cancelled: { label: 'Cancelled', color: 'border-slate-200 bg-slate-100 text-slate-600' },
 }
@@ -36,7 +36,10 @@ export default function UserOrderCard({ order, onStatusChange }: { order: Custom
     <header className="space-y-2 px-5 pt-5">
       <h2 className="font-semibold text-gray-800">Order <span className="text-green-700">#{order._id.slice(-6)}</span></h2>
       <p className="text-xs text-gray-500">Placed on {dateLabel}</p>
-      <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-medium ${status.color}`}>{status.label}</span>
+
+<span className={`inline-block rounded-full px-2.5 py-1 text-xs font-medium ${status?.color || 'bg-gray-100 text-gray-800'}`}>
+  {status?.label || order.status || 'Unknown'}
+</span>
     </header>
     <div className="space-y-4 p-5">
       {order.status === 'cancelled' && <p className="flex items-center gap-2 text-xs text-gray-600"><XCircle size={16} /> This order was cancelled.</p>}
