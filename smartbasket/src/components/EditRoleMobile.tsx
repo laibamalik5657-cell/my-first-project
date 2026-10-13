@@ -1,6 +1,7 @@
+
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { motion } from 'motion/react'
 import {
   Bike,
@@ -8,7 +9,6 @@ import {
   ArrowRight,
   Loader2,
   Store,
-  ShieldCheck,
 } from 'lucide-react'
 import axios from 'axios'
 import { useRouter } from 'next/navigation'
@@ -22,28 +22,10 @@ function EditRoleMobile({
   const router = useRouter()
   const { update } = useSession()
 
-  // Admin already exists or not
-  const [adminExists, setAdminExists] = useState(false)
-
-  // Check database when page opens
-  useEffect(() => {
-    const checkAdmin = async () => {
-      try {
-        const res = await axios.get('/api/user/check-admin')
-        setAdminExists(res.data.adminExists)
-      } catch (error) {
-        console.log(error)
-      }
-    }
-
-    checkAdmin()
-  }, [])
-
-  // Normal roles
   const roles = [
     {
       id: 'user',
-      label: 'User',
+      label: 'Customer',
       icon: User,
     },
     {
@@ -56,17 +38,6 @@ function EditRoleMobile({
       label: 'Shopkeeper',
       icon: Store,
     },
-
-    // Admin only appears if there is NO admin in database
-    ...(!adminExists
-      ? [
-          {
-            id: 'admin',
-            label: 'Admin',
-            icon: ShieldCheck,
-          },
-        ]
-      : []),
   ]
 
   const [selectedRole, setSelectedRole] = useState(
@@ -105,7 +76,6 @@ function EditRoleMobile({
 
   return (
     <div className="flex flex-col items-center min-h-screen p-6 w-full justify-center bg-gray-50">
-
       <motion.h1
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -117,10 +87,8 @@ function EditRoleMobile({
           : 'Complete Your Profile'}
       </motion.h1>
 
-      {/* ROLE SELECTION */}
       {assignedRole === 'user' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 justify-items-center gap-6 mt-8">
-
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 justify-items-center gap-6 mt-8">
           {roles.map((role) => {
             const Icon = role.icon
             const isSelected = selectedRole === role.id
@@ -153,11 +121,9 @@ function EditRoleMobile({
               </motion.button>
             )
           })}
-
         </div>
       )}
 
-      {/* MOBILE */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -181,8 +147,8 @@ function EditRoleMobile({
         />
       </motion.div>
 
-      {/* BUTTON */}
       <motion.button
+        type="button"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.7 }}
