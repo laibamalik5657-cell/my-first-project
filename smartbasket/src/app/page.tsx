@@ -95,7 +95,7 @@ async function Home(props: {
             ) : (
                 <DeliveryBoy />
             )}
-            <Footer />
+                        {user.role === "user" && <Footer />}
         </>
     )
 }
