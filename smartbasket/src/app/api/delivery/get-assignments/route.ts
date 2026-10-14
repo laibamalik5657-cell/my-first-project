@@ -4,9 +4,6 @@ import connectDb from "@/lib/db";
 import DeliveryAssignment from "@/models/deliveryAssignment.model";
 import { NextResponse } from "next/server";
 
-
-
-
 export async function GET() {
     try {
     await connectDb()

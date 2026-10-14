@@ -63,13 +63,12 @@ const grocerySchema = new mongoose.Schema<IGrocery>(
       default: 0,
       min: 0,
     },
-    // Admin switch. A product is only sold when this is true AND stock > 0.
+  
     isAvailable: {
       type: Boolean,
       default: true,
     },
-    // Denormalised from the Review collection so listings don't have to
-    // aggregate on every request. Recomputed whenever a review is written.
+  
     rating: {
       type: Number,
       default: 0,
@@ -87,7 +86,6 @@ const grocerySchema = new mongoose.Schema<IGrocery>(
   }
 );
 
-// listing queries filter on availability and (optionally) category
 grocerySchema.index({ isAvailable: 1, category: 1, createdAt: -1 })
 
 const Grocery =

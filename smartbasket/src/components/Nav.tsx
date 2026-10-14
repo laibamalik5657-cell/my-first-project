@@ -1,425 +1,689 @@
-'use client';
 
-import { useState, useRef, useEffect, FormEvent } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { createPortal } from 'react-dom';
-import { User, Users, Menu, Search, ShoppingCart, Boxes, ClipboardCheck, LogOut, Package, PlusCircle, X, Settings } from 'lucide-react';
-import { signOut } from 'next-auth/react';
-import { useSelector } from 'react-redux';
-import type { RootState } from '@/redux/store';
-import { useRouter } from 'next/navigation';
-import ProfileModal from './ProfileModal';
+'use client'
+
+import { useState, useRef, useEffect, type FormEvent } from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
+import {
+  User, Users, Search, ShoppingCart, Boxes, ClipboardCheck,
+  LogOut, Package, PlusCircle, Settings, LayoutDashboard,
+  MapPin, X, PanelLeftOpen,
+} from 'lucide-react'
+import { signOut, useSession } from 'next-auth/react'
+import { useSelector } from 'react-redux'
+import type { RootState } from '@/redux/store'
+import { useRouter, usePathname } from 'next/navigation'
+import ProfileModal from './ProfileModal'
 
 interface IUser {
-  _id?: string;
-  name: string;
-  email: string;
-  password?: string;
-  mobile?: string;
-  address?: string;
-  role: "user" | "deliveryBoy" | "admin" | "shopkeeper";
-  image?: string;
+  _id?: string
+  name?: string
+  email?: string
+  password?: string
+  mobile?: string
+  address?: string
+  role?: 'user' | 'deliveryBoy' | 'admin' | 'shopkeeper'
+  image?: string
 }
 
-export default function Nav({ user: initialUser }: { user: IUser }) {
-  const storedUser = useSelector((state: RootState) => state.user.userData);
-  const user = storedUser?._id === initialUser._id ? { ...initialUser, ...storedUser } : initialUser;
-  const [open, setOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [searchBarOpen, setSearchBarOpen] = useState(false);
-  const { cartData } = useSelector((state: RootState) => state.cart);
-  const [search, setSearch] = useState("");
-  const profileDropDown = useRef<HTMLDivElement>(null);
-  const router = useRouter();
-  const [showProfileModal, setShowProfileModal] = useState(false);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
+interface IGroceryItem {
+  _id: string
+  title?: string
+  name?: string
+  category?: string
+  price?: number
+  image?: string
+  images?: string[]
+}
+
+export default function Nav({ user: initialUser }: { user?: IUser }) {
+  const { data: session } = useSession()
+  const storedUser = useSelector((state: RootState) => state.user.userData)
+  const user: IUser = storedUser?._id
+    ? storedUser
+    : initialUser?._id
+      ? initialUser
+      : (session?.user as IUser) || {}
+
+  const { cartData } = useSelector((state: RootState) => state.cart)
+
+  const [sidebarVisible, setSidebarVisible] = useState(true)
+  const [openProfileDropdown, setOpenProfileDropdown] = useState(false)
+  const [search, setSearch] = useState('')
+  const [suggestions, setSuggestions] = useState<IGroceryItem[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [showProfileModal, setShowProfileModal] = useState(false)
+  const [allGroceries, setAllGroceries] = useState<IGroceryItem[]>([])
+  const [groceriesLoading, setGroceriesLoading] = useState(false)
+
+  const profileDropDownRef = useRef<HTMLDivElement>(null)
+  const searchContainerRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
+  const pathname = usePathname()
+
+  const publicRoutes = [
+    '/signin', '/sign-in', '/login', '/signup', '/sign-up', '/register',
+    '/select-role', '/selectRole', '/role-selection', '/choose-role',
+    '/reset-password', '/forgot-password', '/unauthorized',
+  ]
+
+  const isPublicRoute = publicRoutes.some(
+    route => pathname === route || pathname.startsWith(`${route}/`)
+  )
+
+  const role = String(user.role || '').toLowerCase().replace(/[\s_-]/g, '')
+  const isCustomer = role === 'user' || role === 'customer'
+  const isAdmin = role === 'admin'
+  const isShopkeeper = role === 'shopkeeper'
+  const isDelivery = ['deliveryboy', 'delivery'].includes(role)
 
   useEffect(() => {
-    if (!menuOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMenuOpen(false);
-    };
-    document.addEventListener("keydown", closeOnEscape);
+    if (isPublicRoute) return
+
+    const savedState = localStorage.getItem('sidebar_visible')
+    setSidebarVisible(savedState !== null ? savedState === 'true' : true)
+  }, [pathname, isPublicRoute])
+
+  useEffect(() => {
+    const styleId = 'smartbasket-layout-style'
+    let styleTag = document.getElementById(styleId) as HTMLStyleElement | null
+    const sidebarWidth = sidebarVisible ? '240px' : '0px'
+
+    if (!styleTag) {
+      styleTag = document.createElement('style')
+      styleTag.id = styleId
+      document.head.appendChild(styleTag)
+    }
+
+    if (isPublicRoute) {
+      styleTag.innerHTML = `
+        main.smartbasket-main {
+          margin-left: ${sidebarWidth} !important;
+          padding-left: 0 !important;
+          padding-top: 80px !important;
+          width: calc(100% - ${sidebarWidth}) !important;
+          min-height: 100vh !important;
+          box-sizing: border-box !important;
+          transition: margin-left 320ms cubic-bezier(.22,1,.36,1),
+                      width 320ms cubic-bezier(.22,1,.36,1) !important;
+        }
+
+        main.smartbasket-main > .smartbasket-page-container,
+        .smartbasket-page-container {
+          width: 100% !important;
+          max-width: 1440px !important;
+          margin-inline: auto !important;
+          box-sizing: border-box !important;
+        }
+      `
+    } else {
+      styleTag.innerHTML = `
+        html, body {
+          overflow-x: hidden;
+        }
+
+        main.smartbasket-main {
+          margin-left: ${sidebarWidth} !important;
+          padding-left: 0 !important;
+          padding-top: 80px !important;
+          width: calc(100% - ${sidebarWidth}) !important;
+          min-height: 100vh !important;
+          box-sizing: border-box !important;
+          transition: margin-left 320ms cubic-bezier(.22,1,.36,1),
+                      width 320ms cubic-bezier(.22,1,.36,1) !important;
+        }
+
+        main.smartbasket-main > .smartbasket-page-container,
+        .smartbasket-page-container {
+          width: 100% !important;
+          max-width: 1440px !important;
+          margin-left: auto !important;
+          margin-right: auto !important;
+          box-sizing: border-box !important;
+        }
+
+        @media (max-width: 767px) {
+          main.smartbasket-main {
+            margin-left: 0 !important;
+            width: 100% !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+          }
+
+          .smartbasket-page-container {
+            padding-left: 16px !important;
+            padding-right: 16px !important;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          main.smartbasket-main {
+            transition: none !important;
+          }
+        }
+      `
+    }
+
     return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [menuOpen]);
+      document.getElementById(styleId)?.remove()
+    }
+  }, [sidebarVisible, isPublicRoute])
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (profileDropDown.current && !profileDropDown.current.contains(e.target as Node)) {
-        setOpen(false);
+      if (
+        profileDropDownRef.current &&
+        !profileDropDownRef.current.contains(e.target as Node)
+      ) {
+        setOpenProfileDropdown(false)
       }
-    };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const handleSearch = (e: FormEvent) => {
-    e.preventDefault();
-    const query = search.trim();
-    if (!query) {
-      return router.push("/");
+      if (
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(e.target as Node)
+      ) {
+        setShowSuggestions(false)
+      }
     }
 
-    router.push(`/?q=${encodeURIComponent(query)}`);
-    setSearch("");
-    setSearchBarOpen(false);
-  };
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
-  const sideBar = menuOpen ? createPortal(
-    <AnimatePresence>
-      <button type="button" aria-label="Close navigation" onClick={() => setMenuOpen(false)} className="fixed inset-0 z-[9998] bg-black/40 backdrop-blur-sm" />
-      <motion.div
-        initial={{ x: -300, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        exit={{ x: -300 }}
-        transition={{ type: "spring", stiffness: 100, damping: 15 }}
-        id="mobile-navigation"
-        className="fixed top-0 left-0 h-full w-[85%] sm:w-[65%] md:w-[40%] lg:w-[30%] z-[9999] bg-gradient-to-b from-green-800 via-green-900 to-green-950 backdrop-blur-xl border-r border-green-500/40 shadow-2xl flex flex-col overflow-y-auto p-6 text-white"
-      >
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="font-extrabold text-2xl tracking-wide">
-            {user.role === "admin" ? "Admin Panel" : user.role === "shopkeeper" ? "Shopkeeper Panel" : "SmartBasket"}
-          </h1>
-          <button 
-            aria-label="Close navigation"
-            className="text-3xl hover:text-red-300 transition bg-white/10 p-1.5 rounded-full"
-            onClick={() => setMenuOpen(false)}
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+  // SEARCH FIX: fetch groceries for the customer and safely handle API responses.
+  
+  // Load groceries for navbar search suggestions
+  useEffect(() => {
+    if (isPublicRoute || !isCustomer) {
+      setAllGroceries([]);
+      return;
+    }
 
-        {/* User Profile Card inside Sidebar */}
-        <div className="flex items-center gap-3 p-3 bg-white/10 rounded-2xl mb-6 shadow-inner border border-white/10">
-          <div className="w-12 h-12 rounded-full overflow-hidden border-2 shadow-md border-green-400 relative flex-shrink-0">
-            {user?.image ? (
-              <Image src={user?.image} alt="user" fill className="object-cover rounded-full" />
-            ) : (
-              <User className="w-12 h-12 p-2 text-green-300" />
-            )}
-          </div>
-          <div className="overflow-hidden">
-            <h2 className="text-base font-semibold text-white truncate">{user?.name}</h2>
-            <p className="text-xs text-green-200 capitalize tracking-wide">{user?.role}</p>
-          </div>
-        </div>
+    const controller = new AbortController();
 
-        {/* Navigation Links based on Roles */}
-        <div className="flex flex-col gap-2 font-medium">
-          {user?.role === "admin" && (
-            <>
-              <Link href="/admin/view-grocery" className="flex items-center gap-3 p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all" onClick={() => setMenuOpen(false)}>
-                <Boxes className="w-5 h-5 text-green-300" /> View Grocery
-              </Link>
-              <Link href="/admin/manage-orders" className="flex items-center gap-3 p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all" onClick={() => setMenuOpen(false)}>
-                <ClipboardCheck className="w-5 h-5 text-green-300" /> Manage Orders
-              </Link>
-              <Link href="/admin/users" className="flex items-center gap-3 p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all" onClick={() => setMenuOpen(false)}>
-                <Users className="w-5 h-5 text-green-300" /> Users
-              </Link>
-            </>
-          )}
+    async function fetchGroceries() {
+      setGroceriesLoading(true);
 
-          {user?.role === "shopkeeper" && (
-            <>
-              <Link href="/admin/add-grocery" className='flex items-center gap-3 p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all' onClick={() => setMenuOpen(false)}>
-                <PlusCircle className='w-5 h-5 text-green-300' /> Add Grocery
-              </Link>
-              <Link href="/admin/view-grocery" className="flex items-center gap-3 p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all" onClick={() => setMenuOpen(false)}>
-                <Boxes className="w-5 h-5 text-green-300" /> View Grocery
-              </Link>
-            </>
-          )}
+      try {
+        const response = await fetch('/api/groceries', {
+          method: 'GET',
+          cache: 'no-store',
+          signal: controller.signal,
+        });
 
-          {user?.role === "deliveryBoy" && (
-            <Link href="/delivery/my-deliveries" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 rounded-xl bg-white/10 p-3 hover:bg-white/20 transition-all">
-              <Package className="w-5 h-5 text-green-300" /> My Deliveries
-            </Link>
-          )}
+        if (!response.ok) {
+          throw new Error(`Groceries API failed: ${response.status}`);
+        }
 
-          {user?.role === "user" && (
-            <>
-              <Link href="/" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all">
-                <Boxes className="w-5 h-5 text-green-300" /> Home / Groceries
-              </Link>
-              <Link href="/user/cart" onClick={() => setMenuOpen(false)} className="flex items-center justify-between p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all">
-                <div className="flex items-center gap-3">
-                  <ShoppingCart className="w-5 h-5 text-green-300" /> Cart
-                </div>
-                <span className="bg-red-500 text-white text-xs px-2.5 py-0.5 rounded-full font-semibold">
-                  {cartData?.length || 0}
-                </span>
-              </Link>
-              <Link href="/user/my-orders" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all">
-                <Package className="w-5 h-5 text-green-300" /> My Orders
-              </Link>
-            </>
-          )}
-        </div>
+        const data = await response.json();
 
-        <div className="my-6 border-t border-white/20"></div>
+        // Support different API response formats
+        const payload =
+          data?.items ??
+          data?.groceries ??
+          data?.products ??
+          data?.groceryList ??
+          data?.data?.items ??
+          data?.data?.groceries ??
+          data?.data ??
+          data;
 
-        {/* Profile & Settings inside Sidebar */}
-        <div className="flex flex-col gap-2 font-medium">
-          <button 
-            onClick={() => { setMenuOpen(false); setShowProfileModal(true); }} 
-            className="flex items-center gap-3 w-full p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all text-left"
-          >
-            <User className="w-5 h-5 text-green-300" /> Profile
-          </button>
-          <button 
-            onClick={() => { setMenuOpen(false); setShowSettingsModal(true); }} 
-            className="flex items-center gap-3 w-full p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all text-left"
-          >
-            <Settings className="w-5 h-5 text-green-300" /> Settings
-          </button>
-        </div>
+        const rawItems = Array.isArray(payload) ? payload : [];
 
-        <button 
-          onClick={async () => await signOut({ callbackUrl: "/" })}
-          className="flex items-center gap-3 text-red-300 font-semibold hover:bg-red-500/20 w-full p-3 rounded-xl transition mt-auto border border-red-500/30"
-        >
-          <LogOut className="w-5 h-5 text-red-300" /> Logout
-        </button>
-      </motion.div>
-    </AnimatePresence>,
-    document.body
-  ) : null;
+        // Support both "name" and "title" fields
+        const normalizedItems: IGroceryItem[] = rawItems
+          .filter(
+            (item: any) =>
+              item &&
+              typeof item._id === 'string' &&
+              (typeof item.name === 'string' ||
+                typeof item.title === 'string')
+          )
+          .map((item: any) => ({
+            _id: item._id,
+            name: item.name || item.title || '',
+            title: item.title || item.name || '',
+            category: item.category || '',
+            price: item.price,
+            image: item.image || item.images?.[0] || '',
+            images: item.images || [],
+          }));
+
+        setAllGroceries(normalizedItems);
+        console.log(
+          'Navbar search products:',
+          normalizedItems.length
+        );
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          console.error('Navbar search error:', error);
+          setAllGroceries([]);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setGroceriesLoading(false);
+        }
+      }
+    }
+
+    void fetchGroceries();
+
+    return () => controller.abort();
+  }, [isPublicRoute, isCustomer]);
+
+  // SEARCH FIX: match product name, title and category without case sensitivity.
+
+
+  // Match suggestions while the user types
+  useEffect(() => {
+    const query = search.trim().toLowerCase();
+
+    if (!query) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const matched = allGroceries.filter((item) => {
+      const name = (item.name || item.title || '').trim().toLowerCase();
+      const category = (item.category || '').trim().toLowerCase();
+
+      return (
+        name.startsWith(query) ||
+        name.includes(query) ||
+        category.startsWith(query) ||
+        category.includes(query)
+      );
+    });
+
+    setSuggestions(matched.slice(0, 8));
+    setShowSuggestions(true);
+  }, [search, allGroceries]);
+
+
+
+  const toggleSidebar = () => {
+    setSidebarVisible(prev => {
+      const next = !prev
+      localStorage.setItem('sidebar_visible', String(next))
+      return next
+    })
+  }
+
+  const handleSearch = (e: FormEvent) => {
+    e.preventDefault()
+    setShowSuggestions(false)
+
+    const query = search.trim()
+    if (query) router.push(`/?q=${encodeURIComponent(query)}`)
+  }
+
+  const handleSelectSuggestion = (itemName: string) => {
+    setSearch(itemName)
+    setShowSuggestions(false)
+    router.push(`/?q=${encodeURIComponent(itemName)}`)
+  }
+
+  const isActiveRoute = (path: string) =>
+    path === '/'
+      ? pathname === '/'
+      : pathname === path || pathname.startsWith(`${path}/`)
+
+  if (isPublicRoute || (!user._id && !user.email && !user.role)) return null
+
+  const linkClass = (path: string) =>
+    `flex items-center gap-3 rounded-xl p-2.5 transition-all duration-200 ${
+      isActiveRoute(path)
+        ? 'bg-[#e8f5e9] font-bold text-[#00c853]'
+        : 'text-slate-600 hover:bg-emerald-50 hover:text-[#00c853]'
+    }`
 
   return (
     <>
-      <nav aria-label="Main navigation" className="w-[95%] fixed top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-green-500 to-green-700 rounded-2xl shadow-lg shadow-black/30 flex justify-between items-center h-20 px-4 md:px-8 z-50">
+      <nav className="fixed left-0 right-0 top-0 z-50 flex h-16 items-center justify-between bg-[#00c853] px-6 text-white shadow-md">
+        <Link
+          href="/"
+          className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-white"
+        >
+          SmartBasket
+        </Link>
 
-        {/* Left Side: Sidebar Hamburger Menu + SmartBasket Logo */}
-        <div className="flex items-center gap-3">
-          <button 
-            type="button" 
-            aria-label="Open navigation" 
-            aria-expanded={menuOpen} 
-            aria-controls="mobile-navigation"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-md hover:scale-105 transition"
-            onClick={() => setMenuOpen(prev => !prev)}
+        {isCustomer && (
+          <div
+            ref={searchContainerRef}
+            className="relative hidden w-1/3 max-w-md lg:block"
           >
-            <Menu className="text-green-600 w-6 h-6" />
-          </button>
+            <form
+              onSubmit={handleSearch}
+              className="relative flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 shadow-sm"
+            >
+              <Search className="mr-2 h-4 w-4 flex-shrink-0 text-slate-400" />
 
-          <Link href="/" className="text-white font-extrabold text-xl sm:text-2xl tracking-wide hover:scale-105 transition-transform">
-            SmartBasket
-          </Link>
-        </div>
+              <input
+                type="text"
+                placeholder="Search groceries..."
+                autoComplete="off"
+                className="w-full bg-transparent text-sm font-medium text-slate-800 outline-none placeholder:text-slate-400"
+                value={search}
+                onChange={e => {
+                  setSearch(e.target.value)
+                  setShowSuggestions(true)
+                }}
+                onFocus={() => {
+                  if (search.trim()) setShowSuggestions(true)
+                }}
+              />
 
-        {/* Center Search Bar for Users */}
-        {user?.role === "user" && (
-          <form className="hidden md:flex items-center bg-white rounded-full px-4 py-2 w-1/3 max-w-md shadow-md" onSubmit={handleSearch}>
-            <Search className="text-gray-500 w-5 h-5 mr-3" />
-            <input type="text" placeholder="Search groceries..."
-              className="flex-1 outline-none text-gray-700 placeholder:text-gray-400 text-sm"
-              value={search}
-              onChange={(e)=>setSearch(e.target.value)}
-            />
-          </form>
-        )}
+              {search && (
+                <button
+                  type="button"
+                  aria-label="Clear search"
+                  onClick={() => {
+                    setSearch('')
+                    setSuggestions([])
+                    setShowSuggestions(false)
+                  }}
+                  className="ml-2 text-slate-400 hover:text-slate-700"
+                >
+                  <X size={15} />
+                </button>
+              )}
+            </form>
 
-        {/* Desktop Quick Links */}
-        {user?.role === 'deliveryBoy' && (
-          <Link href="/delivery/my-deliveries" className="hidden items-center gap-2 bg-white text-green-700 font-semibold px-4 py-2 rounded-full hover:bg-green-100 transition-all lg:flex text-sm">
-            <Package size={18} /> My Deliveries
-          </Link>
-        )}
-        
-        {user?.role === "admin" && (
-          <div className='hidden lg:flex items-center gap-2'>
-            <Link href='/admin/view-grocery' className='flex items-center gap-2 bg-white text-green-700 font-semibold px-3 py-2 rounded-full hover:bg-green-100 transition-all text-sm'>
-              <Boxes className='w-4 h-4' /> View Grocery
-            </Link>
-            <Link href='/admin/manage-orders' className='flex items-center gap-2 bg-white text-green-700 font-semibold px-3 py-2 rounded-full hover:bg-green-100 transition-all text-sm'>
-              <ClipboardCheck className='w-4 h-4' /> Manage Orders
-            </Link>
-            <Link href='/admin/users' className='flex items-center gap-2 bg-white text-green-700 font-semibold px-3 py-2 rounded-full hover:bg-green-100 transition-all text-sm'>
-              <Users className='w-4 h-4' /> Users
-            </Link>
-          </div>
-        )}
+            {showSuggestions && search.trim() && (
+              <div className="absolute left-0 right-0 top-12 z-[9999] max-h-[300px] overflow-y-auto rounded-xl border border-slate-200 bg-white p-1 text-slate-800 shadow-2xl">
+                {suggestions.length > 0 ? (
+                  suggestions.map(item => {
+                 const displayName = item.name || item.title || 'Product'
+const displayImage = item.image
 
-        {user?.role === "shopkeeper" && (
-          <div className='hidden lg:flex items-center gap-2'>
-            <Link href='/admin/add-grocery' className='flex items-center gap-2 bg-white text-green-700 font-semibold px-4 py-2 rounded-full hover:bg-green-100 transition-all text-sm'>
-              <PlusCircle className='w-4 h-4' /> Add Grocery
-            </Link>
-            <Link href='/admin/view-grocery' className='flex items-center gap-2 bg-white text-green-700 font-semibold px-4 py-2 rounded-full hover:bg-green-100 transition-all text-sm'>
-              <Boxes className='w-4 h-4' /> View Grocery
-            </Link>
-          </div>
-        )}
+                    return (
+                      <button
+                        key={item._id}
+                        type="button"
+                        onMouseDown={e => e.preventDefault()}
+                        onClick={() => handleSelectSuggestion(displayName)}
+                        className="flex w-full items-center gap-3 rounded-lg border-b border-slate-100 p-2 text-left transition-colors last:border-0 hover:bg-emerald-50"
+                      >
+                        {displayImage ? (
+                          <div className="relative h-9 w-9 flex-shrink-0 overflow-hidden rounded bg-slate-100">
+                            <Image
+                              src={displayImage}
+                              alt={displayName}
+                              fill
+                              sizes="36px"
+                              className="object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <Boxes className="h-5 w-5 flex-shrink-0 text-[#00c853]" />
+                        )}
 
-        {/* Right Side Icons (Cart, Search toggle for mobile, Profile Dropdown) */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {user?.role === "user" && (
-            <>
-              <div 
-                className="md:hidden bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-md cursor-pointer hover:scale-105 transition"
-                onClick={() => setSearchBarOpen(prev => !prev)}
-              >
-                <Search className="text-green-600 w-5 h-5" />
+                        <div className="flex-1 overflow-hidden">
+                          <p className="truncate text-sm font-semibold">
+                            {displayName}
+                          </p>
+                          {item.category && (
+                            <p className="truncate text-xs text-slate-400">
+                              {item.category}
+                            </p>
+                          )}
+                        </div>
+
+                        {item.price !== undefined && (
+                          <span className="text-xs font-bold text-[#00c853]">
+                            Rs. {item.price.toLocaleString('en-PK')}
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })
+                ) : (
+                  <div className="p-3 text-center text-xs text-slate-500">
+                    {groceriesLoading
+                      ? 'Loading groceries...'
+                      : 'No matching products found'}
+                  </div>
+                )}
               </div>
+            )}
+          </div>
+        )}
 
-              <Link href="/user/cart" className="relative bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-md hover:scale-105 transition">
-                <ShoppingCart className="text-green-600 w-5 h-5" />
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-semibold w-5 h-5 flex items-center justify-center rounded-full shadow">
-                  {cartData?.length || 0}
-                </span>
-              </Link>
-            </>
+        <div className="flex items-center gap-4">
+          {isCustomer && (
+            <Link
+              href="/user/cart"
+              aria-label="Cart"
+              className="relative rounded-full p-2 transition hover:bg-[#00b048]"
+            >
+              <ShoppingCart className="h-5 w-5 text-white" />
+              <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                {cartData?.length || 0}
+              </span>
+            </Link>
           )}
 
-          {/* Profile Dropdown */}
-          <div className="relative" ref={profileDropDown}>
-            <button type="button" aria-label="Open account menu" aria-expanded={open}
-              className="relative bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-md cursor-pointer hover:scale-105 transition overflow-hidden"
-              onClick={() => setOpen(prev => !prev)}
+          <div ref={profileDropDownRef} className="relative">
+            <button
+              onClick={() => setOpenProfileDropdown(prev => !prev)}
+              aria-label="Open profile menu"
+              className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-white bg-[#00b048] transition-transform duration-300 ease-in-out hover:scale-105"
             >
-              {user?.image ? (
-                <Image src={user?.image} alt="user" fill className="object-cover rounded-full" />
+              {user.image ? (
+                <Image
+                  src={user.image}
+                  alt="Profile"
+                  width={36}
+                  height={36}
+                  className="h-full w-full object-cover"
+                />
               ) : (
-                <User className="text-green-600 w-5 h-5" />
+                <User className="h-5 w-5 text-white" />
               )}
             </button>
 
-            <AnimatePresence>
-              {open && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                  transition={{ duration: 0.3 }}
-                  className="absolute right-0 mt-3 w-56 text-slate-700 bg-white rounded-2xl shadow-xl border border-gray-200 p-3 z-50"
+            {openProfileDropdown && (
+              <div className="absolute right-0 z-[100] mt-2 w-48 rounded-xl border border-slate-200 bg-white p-2 text-slate-800 shadow-xl">
+                <div className="mb-1 border-b border-slate-100 p-2">
+                  <p className="truncate text-sm font-bold">{user.name}</p>
+                  <p className="text-xs font-medium capitalize text-[#00c853]">
+                    {user.role}
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setOpenProfileDropdown(false)
+                    setShowProfileModal(true)
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition hover:bg-slate-100"
                 >
-                  <div className="flex items-center gap-3 px-3 py-2 border-b border-gray-100">
-                    <div className="w-10 h-10 relative rounded-full overflow-hidden flex-shrink-0">
-                      {user?.image ? (
-                        <Image src={user?.image} alt='user' fill className="object-cover rounded-full" />
-                      ) : (
-                        <User className="w-10 h-10 text-green-600 p-1" />
-                      )}
-                    </div>
-                    <div className="overflow-hidden">
-                      <div className='text-gray-800 font-semibold truncate'>{user?.name}</div>
-                      <div className='text-xs text-gray-500 capitalize'>{user?.role}</div>
-                    </div>
-                  </div>
+                  <User className="h-4 w-4" /> Profile
+                </button>
 
-                  {user?.role === "user" && (
-                    <Link 
-                      href="/user/my-orders" 
-                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-100 rounded-xl text-gray-700 text-sm mt-1"
-                      onClick={() => setOpen(false)}
-                    >
-                      <Package className="w-4 h-4" /> My Orders
-                    </Link>
-                  )}
-
-                  <button onClick={() => { setOpen(false); setShowProfileModal(true); }} className="w-full text-left px-4 py-2.5 hover:bg-gray-100 rounded-xl text-sm text-gray-700 font-medium">Profile</button>
-                  <button onClick={() => { setOpen(false); setShowSettingsModal(true); }} className="w-full text-left px-4 py-2.5 hover:bg-gray-100 rounded-xl text-sm text-gray-700 font-medium">Settings</button>
-                   
-                  <button 
-                    onClick={() => { setOpen(false); signOut({ callbackUrl: "/" }); }}
-                    className="flex items-center gap-3 text-red-500 hover:bg-red-50 w-full p-2.5 rounded-lg transition text-sm mt-1 font-semibold"
-                  >
-                    <LogOut className="w-4 h-4" /> Logout
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                <button
+                  onClick={() => signOut({ callbackUrl: '/' })}
+                  className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-600 transition hover:bg-red-50"
+                >
+                  <LogOut className="h-4 w-4" /> Logout
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </nav>
 
-      {sideBar}
-
-      {/* Mobile Search Bar overlay */}
-      <AnimatePresence>
-        {searchBarOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ duration: 0.3 }}
-            className="fixed top-24 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-white rounded-2xl shadow-xl p-4 z-[60] md:hidden flex items-center"
+      {sidebarVisible ? (
+        <aside className="fixed bottom-0 left-0 top-16 z-40 flex w-60 flex-col overflow-x-hidden overflow-y-auto border-r border-slate-200 bg-white p-3 shadow-sm transition-transform duration-300 ease-in-out">
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            title="Close sidebar"
+            aria-label="Close sidebar"
+            className="absolute right-2 top-2 z-50 flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition-all duration-200 hover:rotate-90 hover:bg-red-50 hover:text-red-500"
           >
-            <Search className='text-gray-500 w-5 h-5 mr-2' />
-            <form className='grow' onSubmit={handleSearch}>
-              <input type="text" className='w-full outline-none text-gray-700 text-sm' 
-                placeholder='Search groceries...' value={search}
-                onChange={(e)=>setSearch(e.target.value)}/>
-            </form>
-            <button onClick={() => setSearchBarOpen(false)}>
-              <X className='text-gray-500 w-5 h-5' />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <X className="h-4 w-4" />
+          </button>
 
-      {/* Profile Details Modal */}
-      <AnimatePresence>
-        {showProfileModal && (
-          <ProfileModal user={user} onClose={() => setShowProfileModal(false)} />
-        )}
-      </AnimatePresence>
-
-      {/* Settings Modal */}
-      <AnimatePresence>
-        {showSettingsModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm relative border border-gray-100 text-gray-800"
-            >
-              <button 
-                onClick={() => setShowSettingsModal(false)}
-                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              <h2 className="text-xl font-bold mb-4 text-center">Settings</h2>
-
-              <div className="space-y-3 text-sm">
-                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-gray-800">Account Status</p>
-                    <p className="text-xs text-gray-500">Active and Verified</p>
-                  </div>
-                  <span className="w-2.5 h-2.5 bg-green-500 rounded-full"></span>
-                </div>
-
-                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-gray-800">Role</p>
-                    <p className="text-xs text-gray-500 capitalize">{user?.role || "user"}</p>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setShowSettingsModal(false)}
-                className="w-full mt-6 bg-green-600 text-white font-semibold py-2.5 rounded-xl hover:bg-green-700 transition shadow-md shadow-green-200"
-              >
-                Close
-              </button>
-            </motion.div>
+          <div className="mb-4 flex flex-shrink-0 items-center gap-3 rounded-xl bg-slate-50 p-2 pr-10">
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#e8f5e9] font-bold text-[#00c853]">
+              <User className="h-4 w-4" />
+            </div>
+            <div className="overflow-hidden">
+              <p className="truncate text-xs font-bold text-slate-800">{user.name}</p>
+              <p className="truncate text-[10px] capitalize text-slate-400">{user.role}</p>
+            </div>
           </div>
-        )}
-      </AnimatePresence>
+
+          <div className="flex-1 space-y-1 text-sm font-medium">
+            <p className="mb-1 px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              Menu
+            </p>
+
+            {isCustomer && (
+              <>
+                <Link href="/" className={linkClass('/')}>
+                  <Boxes className="h-5 w-5 flex-shrink-0" />
+                  <span>Home / Groceries</span>
+                </Link>
+                <Link href="/user/cart" className={linkClass('/user/cart')}>
+                  <ShoppingCart className="h-5 w-5 flex-shrink-0" />
+                  <span>Cart</span>
+                  {!!cartData?.length && (
+                    <span className="ml-auto rounded-full bg-[#00c853] px-2 py-0.5 text-[10px] font-bold text-white">
+                      {cartData.length}
+                    </span>
+                  )}
+                </Link>
+                <Link href="/user/my-orders" className={linkClass('/user/my-orders')}>
+                  <Package className="h-5 w-5 flex-shrink-0" />
+                  <span>My Orders</span>
+                </Link>
+                <Link href="/user/order-tracking" className={linkClass('/user/order-tracking')}>
+                  <MapPin className="h-5 w-5 flex-shrink-0" />
+                  <span>Track Order</span>
+                </Link>
+              </>
+            )}
+
+            {isAdmin && (
+              <>
+                <Link href="/" className={linkClass('/')}>
+                  <LayoutDashboard className="h-5 w-5" />
+                  <span>Dashboard</span>
+                </Link>
+                <Link href="/admin/view-grocery" className={linkClass('/admin/view-grocery')}>
+                  <Boxes className="h-5 w-5" />
+                  <span>View Grocery</span>
+                </Link>
+                <Link href="/admin/manage-orders" className={linkClass('/admin/manage-orders')}>
+                  <ClipboardCheck className="h-5 w-5" />
+                  <span>Manage Orders</span>
+                </Link>
+                <Link href="/admin/users" className={linkClass('/admin/users')}>
+                  <Users className="h-5 w-5" />
+                  <span>Users</span>
+                </Link>
+              </>
+            )}
+
+            {isShopkeeper && (
+              <>
+                <Link href="/" className={linkClass('/')}>
+                  <LayoutDashboard className="h-5 w-5" />
+                  <span>Dashboard</span>
+                </Link>
+                <Link href="/admin/add-grocery" className={linkClass('/admin/add-grocery')}>
+                  <PlusCircle className="h-5 w-5" />
+                  <span>Add Grocery</span>
+                </Link>
+                <Link href="/admin/view-grocery" className={linkClass('/admin/view-grocery')}>
+                  <Boxes className="h-5 w-5" />
+                  <span>View Grocery</span>
+                </Link>
+              </>
+            )}
+
+            {isDelivery && (
+              <>
+                <Link href="/" className={linkClass('/')}>
+                  <LayoutDashboard className="h-5 w-5" />
+                  <span>Dashboard</span>
+                </Link>
+                <Link href="/delivery/my-deliveries" className={linkClass('/delivery/my-deliveries')}>
+                  <Package className="h-5 w-5" />
+                  <span>My Deliveries</span>
+                </Link>
+                <Link href="/delivery/order-tracking" className={linkClass('/delivery/order-tracking')}>
+                  <MapPin className="h-5 w-5" />
+                  <span>Track Order</span>
+                </Link>
+              </>
+            )}
+
+            <div className="mt-3 space-y-1 border-t border-slate-100 pt-3">
+              <p className="mb-1 px-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Account
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowProfileModal(true)}
+                className="flex w-full items-center gap-3 rounded-xl p-2.5 text-left text-slate-600 transition hover:bg-slate-50 hover:text-[#00c853]"
+              >
+                <User className="h-5 w-5 flex-shrink-0" />
+                <span>Profile</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push('/user/settings')}
+                className="flex w-full items-center gap-3 rounded-xl p-2.5 text-left text-slate-600 transition hover:bg-slate-50 hover:text-[#00c853]"
+              >
+                <Settings className="h-5 w-5 flex-shrink-0" />
+                <span>Settings</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-shrink-0 border-t border-slate-100 pt-2">
+            <button
+              type="button"
+              onClick={() => signOut({ callbackUrl: '/' })}
+              className="flex w-full items-center gap-3 rounded-xl p-2.5 font-semibold text-red-600 transition hover:bg-red-50"
+            >
+              <LogOut className="h-5 w-5 flex-shrink-0" />
+              <span>Logout</span>
+            </button>
+          </div>
+        </aside>
+      ) : (
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          title="Open sidebar"
+          aria-label="Open sidebar"
+          className="fixed left-0 top-[76px] z-50 flex h-9 w-9 items-center justify-center rounded-r-xl border border-l-0 border-slate-200 bg-white text-slate-500 shadow-md transition-all duration-200 hover:w-11 hover:bg-emerald-50 hover:text-[#00c853]"
+        >
+          <PanelLeftOpen className="h-4 w-4" />
+        </button>
+      )}
+
+      {showProfileModal && (
+        <ProfileModal user={user as any} onClose={() => setShowProfileModal(false)} />
+      )}
+
+      <style jsx global>{`
+        html, body { overflow-x: hidden; }
+        aside::-webkit-scrollbar { width: 5px; }
+        aside::-webkit-scrollbar-thumb { background: #d1fae5; border-radius: 999px; }
+        aside::-webkit-scrollbar-track { background: transparent; }
+        @media (max-width: 767px) {
+          .smartbasket-page-container {
+            padding-left: 16px !important;
+            padding-right: 16px !important;
+          }
+        }
+      `}</style>
     </>
-  );
+  )
 }

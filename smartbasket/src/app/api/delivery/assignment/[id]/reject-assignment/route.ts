@@ -5,14 +5,7 @@ import Order from "@/models/order.model";
 import { dispatchOrder } from "@/lib/dispatch";
 import { NextRequest, NextResponse } from "next/server";
 
-/**
- * A delivery boy turns an offered assignment down.
- *
- * They are removed from the broadcast pool. If they were the last rider in it,
- * the order is re-dispatched through the same logic the admin transition uses,
- * excluding everyone who has already rejected it — so it goes back into the
- * pool rather than getting stuck.
- */
+
 export async function POST(
     req: NextRequest,
     context: { params: Promise<{ id: string }> }
@@ -42,7 +35,7 @@ export async function POST(
             .map((b: any) => String(b))
             .filter((b: string) => b !== String(deliveryBoyId)).length
 
-        // record the rejection so a re-broadcast doesn't offer it straight back
+    
         await DeliveryAssignment.updateOne(
             { _id: assignment._id },
             {
@@ -52,21 +45,20 @@ export async function POST(
         )
 
         if (remaining > 0) {
-            // other riders still have the offer open
+           
             return NextResponse.json(
                 { message: "Assignment rejected", reBroadcast: false },
                 { status: 200 }
             )
         }
 
-        // nobody left: put it back into the pool, skipping this rider
+     
         const order = await Order.findById(assignment.order)
         if (!order) {
             return NextResponse.json({ message: "order not found" }, { status: 404 })
         }
 
-        // dispatchOrder reads rejectedBy off the assignment, so every previous
-        // rejection is skipped too
+      
         const { assignment: reDispatched } = await dispatchOrder(order)
 
         return NextResponse.json(

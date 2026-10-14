@@ -13,11 +13,7 @@ export interface ICart {
     updatedAt?: Date
 }
 
-/**
- * One cart document per user. Only the product reference and the quantity are
- * stored — name, price and image are read back from Grocery, so a cart that has
- * been sitting around for a week can't resurrect a stale price.
- */
+
 const cartSchema = new mongoose.Schema<ICart>(
     {
         user: {
