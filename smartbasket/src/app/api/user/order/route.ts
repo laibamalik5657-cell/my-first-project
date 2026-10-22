@@ -9,73 +9,99 @@ import { auth } from "@/auth";
 import { calcTotals } from "@/lib/cart";
 import { releaseStock, reserveStock, validateCartAgainstStock } from "@/lib/stock";
 
+
+function isValidPakMobile(value: unknown): boolean {
+    if (typeof value !== "string") return false;
+
+    const mobile = value.replace(/\D/g, "");
+
+    // Pakistani mobile number: 11 digits, starts with 03
+    if (!/^03\d{9}$/.test(mobile)) return false;
+
+    // Reject all identical digits
+    if (/^(\d)\1{10}$/.test(mobile)) return false;
+
+    // Reject common sequential numbers
+    if (
+        /^(?:0123456789|1234567890|2345678901|3456789012|4567890123|5678901234|6789012345|7890123456|8901234567|9012345678|9876543210|8765432109|7654321098|6543210987|5432109876|4321098765|3210987654|2109876543|1098765432|0987654321)\d?$/.test(mobile)
+    ) {
+        return false;
+    }
+
+    // Reject repeated digits after 03
+    const subscriber = mobile.slice(2);
+
+    if (/^(\d)\1{8}$/.test(subscriber)) return false;
+
+    return true;
+}
+
+
 export async function POST(req: NextRequest) {
     try {
-        await connectDb();
-        const session = await auth();
-
+        await connectDb()
+        const session = await auth()
         if (!session?.user?.id) {
             return NextResponse.json(
                 { message: "Please log in to place an order" },
                 { status: 401 }
-            );
+            )
         }
+        const { items, paymentMethod, address, paymentProof } = await req.json()
+        
+if (!isValidPakMobile(address?.mobile)) {
+    return NextResponse.json(
+        {
+            message:
+                "Enter a valid 11-digit Pakistani mobile number starting with 03. Repeated or sequential numbers are not allowed.",
+        },
+        { status: 400 }
+    );
+}
 
-        const { items, paymentMethod, address, paymentProof } = await req.json();
-        const userId = session.user.id;
+        const userId = session.user.id
 
         const missing = Object.entries({ items: items?.length, paymentMethod, address })
             .filter(([, value]) => !value)
-            .map(([key]) => key);
-
+            .map(([key]) => key)
         if (missing.length > 0) {
             return NextResponse.json(
-                { message: `Missing required order fields: ${missing.join(", ")}` },
+                { message: `Missing order fields: ${missing.join(", ")}` },
                 { status: 400 }
-            );
+            )
         }
-
-        const rawPhone = typeof address === "object" ? (address?.mobile || address?.phone) : null;
-        const cleanPhone = String(rawPhone || "").replace(/[\s\-]/g, "").trim();
-
-        const pakMobileRegex = /^03(?:0[0-9]|1[0-8]|2[0-5]|3[1-7]|4[0-9]|55)\d{7}$/;
-        const isRepeatedDigits = /^03(\d)\1{8}$/.test(cleanPhone);
-
-        if (!cleanPhone || !pakMobileRegex.test(cleanPhone) || isRepeatedDigits) {
-            return NextResponse.json(
-                { message: "Invalid Pakistani phone number. Please provide a valid mobile number (e.g., 03001234567)." },
-                { status: 400 }
-            );
-        }
-
         if (paymentMethod === "online" && !paymentProof) {
             return NextResponse.json(
                 { message: "Upload a screenshot of your transaction to place an online order" },
                 { status: 400 }
-            );
+            )
         }
 
-        const user = await User.findById(userId);
+        // Check if user exists
+        const user = await User.findById(userId)
         if (!user) {
             return NextResponse.json(
                 { error: "User not found" },
                 { status: 404 }
-            );
+            )
         }
 
-        const checked = await validateCartAgainstStock(items);
+        // Re-price and stock-check the cart against the database. Never trust the
+        // prices or availability the browser sent.
+        const checked = await validateCartAgainstStock(items)
         if ("error" in checked) {
-            return NextResponse.json({ message: checked.error }, { status: 409 });
+            return NextResponse.json({ message: checked.error }, { status: 409 })
         }
-        const { lines } = checked;
-        const { finalTotal } = calcTotals(lines);
+        const { lines } = checked
+        const { finalTotal } = calcTotals(lines)
 
-        const reserved = await reserveStock(lines);
+        const reserved = await reserveStock(lines)
         if (!reserved.ok) {
-            return NextResponse.json({ message: reserved.error }, { status: 409 });
+            return NextResponse.json({ message: reserved.error }, { status: 409 })
         }
 
         try {
+            // Create new order
             const newOrder = await Order.create({
                 user: userId,
                 items: lines,
@@ -83,22 +109,27 @@ export async function POST(req: NextRequest) {
                 totalAmount: String(finalTotal),
                 address,
                 paymentProof: paymentMethod === "online" ? paymentProof : null,
-            });
+            })
 
-            await Cart.findOneAndUpdate({ user: userId }, { $set: { items: [] } });
+            // the cart has become an order — empty the stored copy
+            await Cart.findOneAndUpdate({ user: userId }, { $set: { items: [] } })
 
-            await emitEventHandler("new-order", newOrder);
+            await emitEventHandler("new-order", newOrder)
 
-            return NextResponse.json(newOrder, { status: 201 });
+            return NextResponse.json(
+                newOrder,
+                { status: 201 }
+            )
         } catch (error) {
-            await releaseStock(lines);
-            throw error;
+            // order creation failed after stock was taken — give it back
+            await releaseStock(lines)
+            throw error
         }
 
-    } catch (error: any) {
+    } catch (error) {
         return NextResponse.json(
-            { message: `Place order error: ${error.message || error}` },
+            { message : `place order error ${error}` },
             { status: 500 }
-        );
+        )
     }
 }
