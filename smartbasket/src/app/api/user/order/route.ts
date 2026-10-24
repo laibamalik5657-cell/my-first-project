@@ -9,34 +9,6 @@ import { auth } from "@/auth";
 import { calcTotals } from "@/lib/cart";
 import { releaseStock, reserveStock, validateCartAgainstStock } from "@/lib/stock";
 
-
-function isValidPakMobile(value: unknown): boolean {
-    if (typeof value !== "string") return false;
-
-    const mobile = value.replace(/\D/g, "");
-
-    // Pakistani mobile number: 11 digits, starts with 03
-    if (!/^03\d{9}$/.test(mobile)) return false;
-
-    // Reject all identical digits
-    if (/^(\d)\1{10}$/.test(mobile)) return false;
-
-    // Reject common sequential numbers
-    if (
-        /^(?:0123456789|1234567890|2345678901|3456789012|4567890123|5678901234|6789012345|7890123456|8901234567|9012345678|9876543210|8765432109|7654321098|6543210987|5432109876|4321098765|3210987654|2109876543|1098765432|0987654321)\d?$/.test(mobile)
-    ) {
-        return false;
-    }
-
-    // Reject repeated digits after 03
-    const subscriber = mobile.slice(2);
-
-    if (/^(\d)\1{8}$/.test(subscriber)) return false;
-
-    return true;
-}
-
-
 export async function POST(req: NextRequest) {
     try {
         await connectDb()
@@ -48,17 +20,6 @@ export async function POST(req: NextRequest) {
             )
         }
         const { items, paymentMethod, address, paymentProof } = await req.json()
-        
-if (!isValidPakMobile(address?.mobile)) {
-    return NextResponse.json(
-        {
-            message:
-                "Enter a valid 11-digit Pakistani mobile number starting with 03. Repeated or sequential numbers are not allowed.",
-        },
-        { status: 400 }
-    );
-}
-
         const userId = session.user.id
 
         const missing = Object.entries({ items: items?.length, paymentMethod, address })

@@ -1,11 +1,11 @@
 'use client'
 
 import axios from 'axios'
-import { Loader2, Lock, X, CheckCircle2, AlertCircle, Phone, User, MapPin } from 'lucide-react'
+import { Loader2, Lock, X } from 'lucide-react'
 import ProfilePictureEditor from './ProfilePictureEditor'
 import { useRouter } from 'next/navigation'
 import React, { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'motion/react'
 import { useDispatch } from 'react-redux'
 import { setUserData } from '@/redux/userSlice'
 import type { AppDispatch } from '@/redux/store'
@@ -21,13 +21,7 @@ interface IUser {
     image?: string
 }
 
-/** Pakistani Mobile Number Validator */
-const validatePakistaniMobile = (mobile: string): boolean => {
-    // Allows formats: 03xxxxxxxxx, +923xxxxxxxxx, or 923xxxxxxxxx
-    const pkRegex = /^((\+92)|(92)|(0))3\d{9}$/
-    return pkRegex.test(mobile.trim())
-}
-
+/** Editable profile: details on one tab, password change on the other. */
 function ProfileModal({ user, onClose }: { user: IUser; onClose: () => void }) {
     const router = useRouter()
     const dispatch = useDispatch<AppDispatch>()
@@ -45,18 +39,12 @@ function ProfileModal({ user, onClose }: { user: IUser; onClose: () => void }) {
 
     const saveDetails = async (e: React.FormEvent) => {
         e.preventDefault()
-        
+        // mirror of the server rules, for immediate feedback
         if (form.name.trim().length < 2) {
             return setDetailsState({ loading: false, error: 'Name must be at least 2 characters', saved: false })
         }
-        
-        // Strict Pakistani mobile validation check
-        if (!validatePakistaniMobile(form.mobile)) {
-            return setDetailsState({ 
-                loading: false, 
-                error: 'Please enter a valid Pakistani phone number (e.g., 03001234567 or +923001234567)', 
-                saved: false 
-            })
+        if (!/^\d{10,15}$/.test(form.mobile)) {
+            return setDetailsState({ loading: false, error: 'Enter a valid mobile number', saved: false })
         }
 
         setDetailsState({ loading: true, error: '', saved: false })
@@ -101,217 +89,136 @@ function ProfileModal({ user, onClose }: { user: IUser; onClose: () => void }) {
         }
     }
 
-    const fieldClass = 'w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-600 transition-all'
+    const field = 'w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500'
 
     return (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[999] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-999 flex items-center justify-center p-4">
             <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 15 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 15 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-                className="bg-white rounded-3xl shadow-2xl p-6 sm:p-7 w-full max-w-md relative border border-gray-100 max-h-[90vh] overflow-y-auto scrollbar-thin"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md relative border border-gray-100 max-h-[90vh] overflow-y-auto"
             >
-                {/* Close Button */}
                 <button
                     aria-label="Close profile"
                     onClick={onClose}
-                    className="absolute top-5 right-5 text-gray-400 hover:text-gray-700 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition"
                 >
                     <X className="w-5 h-5" />
                 </button>
 
-                {/* Profile Header */}
-                <div className="flex flex-col items-center text-center mb-6">
-                    <div className="relative group mb-3">
-                        <ProfilePictureEditor image={user.image} name={user.name} />
-                    </div>
-                    <h2 className="text-xl font-bold text-gray-900 tracking-tight">{user?.name}</h2>
-                    <p className="text-xs text-gray-500 font-medium mb-2">{user?.email}</p>
-                    <span className="text-[11px] uppercase tracking-wider px-3 py-1 bg-green-50 text-green-700 ring-1 ring-green-600/20 rounded-full font-semibold">
+                <div className="flex flex-col items-center text-center mb-5">
+                    <ProfilePictureEditor image={user.image} name={user.name} />
+                    <h2 className="text-xl font-bold text-gray-800">{user?.name}</h2>
+                    <p className="text-xs text-gray-500">{user?.email}</p>
+                    <span className="text-xs px-3 py-1 bg-green-100 text-green-700 rounded-full font-medium capitalize mt-1">
                         {user?.role}
                     </span>
                 </div>
 
-                {/* Animated Tab Switcher */}
-                <div className="flex gap-1 mb-6 bg-gray-100/80 p-1.5 rounded-2xl relative">
+                <div className="flex gap-2 mb-5 bg-gray-100 p-1 rounded-xl">
                     <button
                         onClick={() => setTab('details')}
-                        className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-colors relative z-10 ${
-                            tab === 'details' ? 'text-green-700' : 'text-gray-500 hover:text-gray-700'
-                        }`}
+                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${tab === 'details' ? 'bg-white shadow text-green-700' : 'text-gray-600'}`}
                     >
-                        {tab === 'details' && (
-                            <motion.div
-                                layoutId="activeTab"
-                                className="absolute inset-0 bg-white rounded-xl shadow-sm"
-                                transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                            />
-                        )}
-                        <span className="relative z-10">Details</span>
+                        Details
                     </button>
                     <button
                         onClick={() => setTab('password')}
-                        className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-colors relative z-10 ${
-                            tab === 'password' ? 'text-green-700' : 'text-gray-500 hover:text-gray-700'
-                        }`}
+                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${tab === 'password' ? 'bg-white shadow text-green-700' : 'text-gray-600'}`}
                     >
-                        {tab === 'password' && (
-                            <motion.div
-                                layoutId="activeTab"
-                                className="absolute inset-0 bg-white rounded-xl shadow-sm"
-                                transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                            />
-                        )}
-                        <span className="relative z-10">Password</span>
+                        Password
                     </button>
                 </div>
 
-                {/* Tab Contents */}
-                <AnimatePresence mode="wait">
-                    {tab === 'details' ? (
-                        <motion.form
-                            key="details"
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 10 }}
-                            transition={{ duration: 0.15 }}
-                            onSubmit={saveDetails}
-                            className="space-y-4"
+                {tab === 'details' ? (
+                    <form onSubmit={saveDetails} className="space-y-3">
+                        <div>
+                            <label className="text-xs font-medium text-gray-600">Name</label>
+                            <input
+                                className={field}
+                                value={form.name}
+                                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                            />
+                        </div>
+                        <div>
+                            <label className="text-xs font-medium text-gray-600">Mobile</label>
+                            <input
+                                className={field}
+                                inputMode="numeric"
+                                value={form.mobile}
+                                onChange={(e) => setForm({ ...form, mobile: e.target.value })}
+                            />
+                        </div>
+                        <div>
+                            <label className="text-xs font-medium text-gray-600">Address</label>
+                            <textarea
+                                className={field}
+                                rows={3}
+                                maxLength={300}
+                                value={form.address}
+                                onChange={(e) => setForm({ ...form, address: e.target.value })}
+                            />
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={detailsState.loading}
+                            className="w-full mt-2 bg-green-600 text-white font-semibold py-2.5 rounded-xl hover:bg-green-700 disabled:bg-green-300 transition"
                         >
-                            <div>
-                                <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1">
-                                    <User className="w-3.5 h-3.5 text-gray-400" />
-                                    Name
-                                </label>
-                                <input
-                                    className={fieldClass}
-                                    placeholder="Enter full name"
-                                    value={form.name}
-                                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                                />
-                            </div>
+                            {detailsState.loading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Save changes'}
+                        </button>
 
-                            <div>
-                                <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1">
-                                    <Phone className="w-3.5 h-3.5 text-gray-400" />
-                                    Pakistani Mobile Number
-                                </label>
-                                <input
-                                    className={fieldClass}
-                                    type="tel"
-                                    placeholder="03001234567 "
-                                    value={form.mobile}
-                                    onChange={(e) => setForm({ ...form, mobile: e.target.value })}
-                                />
-                            </div>
+                        {detailsState.error && <p className="text-red-600 text-sm">{detailsState.error}</p>}
+                        {detailsState.saved && <p className="text-green-700 text-sm">Profile updated.</p>}
+                    </form>
+                ) : (
+                    <form onSubmit={savePassword} className="space-y-3">
+                        <div>
+                            <label className="text-xs font-medium text-gray-600">Current password</label>
+                            <input
+                                type="password"
+                                className={field}
+                                value={pw.currentPassword}
+                                onChange={(e) => setPw({ ...pw, currentPassword: e.target.value })}
+                            />
+                        </div>
+                        <div>
+                            <label className="text-xs font-medium text-gray-600">New password</label>
+                            <input
+                                type="password"
+                                className={field}
+                                value={pw.newPassword}
+                                onChange={(e) => setPw({ ...pw, newPassword: e.target.value })}
+                            />
+                        </div>
+                        <div>
+                            <label className="text-xs font-medium text-gray-600">Confirm new password</label>
+                            <input
+                                type="password"
+                                className={field}
+                                value={pw.confirm}
+                                onChange={(e) => setPw({ ...pw, confirm: e.target.value })}
+                            />
+                        </div>
 
-                            <div>
-                                <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1">
-                                    <MapPin className="w-3.5 h-3.5 text-gray-400" />
-                                    Address
-                                </label>
-                                <textarea
-                                    className={fieldClass}
-                                    rows={3}
-                                    maxLength={300}
-                                    placeholder="Enter complete delivery address"
-                                    value={form.address}
-                                    onChange={(e) => setForm({ ...form, address: e.target.value })}
-                                />
-                            </div>
+                        <p className="text-xs text-gray-500 flex items-center gap-1">
+                            <Lock className="w-3 h-3" />
+                            At least {MIN_PASSWORD_LENGTH} characters, including a letter and a number.
+                        </p>
 
-                            <button
-                                type="submit"
-                                disabled={detailsState.loading}
-                                className="w-full mt-2 bg-green-600 text-white font-semibold py-3 rounded-xl hover:bg-green-700 active:scale-[0.99] disabled:bg-green-300 transition-all shadow-lg shadow-green-600/20"
-                            >
-                                {detailsState.loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Save Changes'}
-                            </button>
-
-                            {detailsState.error && (
-                                <div className="flex items-center gap-2 p-3 bg-red-50 rounded-xl text-red-600 text-xs border border-red-100">
-                                    <AlertCircle className="w-4 h-4 shrink-0" />
-                                    <span>{detailsState.error}</span>
-                                </div>
-                            )}
-
-                            {detailsState.saved && (
-                                <div className="flex items-center gap-2 p-3 bg-green-50 rounded-xl text-green-700 text-xs border border-green-100">
-                                    <CheckCircle2 className="w-4 h-4 shrink-0" />
-                                    <span>Profile updated successfully.</span>
-                                </div>
-                            )}
-                        </motion.form>
-                    ) : (
-                        <motion.form
-                            key="password"
-                            initial={{ opacity: 0, x: 10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -10 }}
-                            transition={{ duration: 0.15 }}
-                            onSubmit={savePassword}
-                            className="space-y-4"
+                        <button
+                            type="submit"
+                            disabled={pwState.loading || !pw.currentPassword}
+                            className="w-full mt-2 bg-green-600 text-white font-semibold py-2.5 rounded-xl hover:bg-green-700 disabled:bg-green-300 transition"
                         >
-                            <div>
-                                <label className="text-xs font-medium text-gray-700 mb-1 block">Current Password</label>
-                                <input
-                                    type="password"
-                                    className={fieldClass}
-                                    value={pw.currentPassword}
-                                    onChange={(e) => setPw({ ...pw, currentPassword: e.target.value })}
-                                />
-                            </div>
+                            {pwState.loading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Change password'}
+                        </button>
 
-                            <div>
-                                <label className="text-xs font-medium text-gray-700 mb-1 block">New Password</label>
-                                <input
-                                    type="password"
-                                    className={fieldClass}
-                                    value={pw.newPassword}
-                                    onChange={(e) => setPw({ ...pw, newPassword: e.target.value })}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="text-xs font-medium text-gray-700 mb-1 block">Confirm New Password</label>
-                                <input
-                                    type="password"
-                                    className={fieldClass}
-                                    value={pw.confirm}
-                                    onChange={(e) => setPw({ ...pw, confirm: e.target.value })}
-                                />
-                            </div>
-
-                            <p className="text-xs text-gray-500 flex items-center gap-1.5 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                                <Lock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                                At least {MIN_PASSWORD_LENGTH} characters, including a letter and a number.
-                            </p>
-
-                            <button
-                                type="submit"
-                                disabled={pwState.loading || !pw.currentPassword}
-                                className="w-full mt-2 bg-green-600 text-white font-semibold py-3 rounded-xl hover:bg-green-700 active:scale-[0.99] disabled:bg-green-300 transition-all shadow-lg shadow-green-600/20"
-                            >
-                                {pwState.loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Change Password'}
-                            </button>
-
-                            {pwState.error && (
-                                <div className="flex items-center gap-2 p-3 bg-red-50 rounded-xl text-red-600 text-xs border border-red-100">
-                                    <AlertCircle className="w-4 h-4 shrink-0" />
-                                    <span>{pwState.error}</span>
-                                </div>
-                            )}
-
-                            {pwState.saved && (
-                                <div className="flex items-center gap-2 p-3 bg-green-50 rounded-xl text-green-700 text-xs border border-green-100">
-                                    <CheckCircle2 className="w-4 h-4 shrink-0" />
-                                    <span>Password updated successfully.</span>
-                                </div>
-                            )}
-                        </motion.form>
-                    )}
-                </AnimatePresence>
+                        {pwState.error && <p className="text-red-600 text-sm">{pwState.error}</p>}
+                        {pwState.saved && <p className="text-green-700 text-sm">Password changed.</p>}
+                    </form>
+                )}
             </motion.div>
         </div>
     )

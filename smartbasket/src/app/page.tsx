@@ -77,27 +77,39 @@ async function Home(props: {
     }
 
     return (
-        <>
-            <NavComponent user={plainUser} />
-            <GeoUpdater userId={plainUser?._id} />
-            {user.role === "user" ? (
-                <UserDashboard
-                    groceryList={groceryList}
-                    hasMore={total > groceryList.length}
-                    total={total}
-                    q={q}
-                    category={category}
-                />
-            ) : user.role === "admin" ? (
-                <AdminDashboard />
-            ) : user.role === "shopkeeper" ? (
-                <ShopkeeperDashboard />
-            ) : (
-                <DeliveryBoy />
-            )}
-            <Footer />
-        </>
-    )
+  <div className="flex min-h-screen flex-col">
+    <NavComponent user={plainUser} />
+    <GeoUpdater userId={plainUser?._id} />
+
+    <main className="flex flex-1 flex-col">
+      {user.role === 'user' ? (
+        <UserDashboard
+          groceryList={groceryList}
+          hasMore={total > groceryList.length}
+          total={total}
+          q={q}
+          category={category}
+        />
+      ) : user.role === 'admin' ? (
+        <AdminDashboard />
+      ) : user.role === 'shopkeeper' ? (
+        <ShopkeeperDashboard />
+      ) : (
+        <DeliveryBoy />
+      )}
+    </main>
+
+    {user.role === 'user' ? (
+      <Footer />
+    ) : (
+      <footer className="mt-auto w-full bg-green-800/40 py-3 text-center text-xs text-green-100">
+        © {new Date().getFullYear()}{' '}
+        <span className="font-semibold text-white">SmartBasket</span>.
+        {' '}All rights reserved.
+      </footer>
+    )}
+  </div>
+)
 }
 
 export default Home

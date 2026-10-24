@@ -53,26 +53,20 @@ export default function CartPage() {
                         {item.name}
                       </Link>
                       <p className="text-xs text-gray-500">{item.unit}</p>
-                      <p className="text-green-700 font-bold mt-1 text-sm sm:text-base">Rs.{money(Number(item.price) )}</p>
+                      <p className="text-green-700 font-bold mt-1 text-sm sm:text-base">Rs.{money(Number(item.price))}</p>
                       {maxed && <p className="mt-1 text-xs text-amber-700">Maximum available quantity</p>}
                     </div>
                     <div className="flex items-center justify-center gap-3 mt-4 sm:mt-0 bg-gray-50 px-3 py-2 rounded-full">
-                      <button aria-label={`Decrease ${item.name} quantity`} className="bg-white p-1.5 rounded-full hover:bg-green-100 transition-all border border-gray-200"
-                       onClick={() => dispatch(decreaseQuantity(item._id))}>
+                      <button aria-label={`Decrease ${item.name} quantity`} className="bg-white p-1.5 rounded-full hover:bg-green-100 transition-all border border-gray-200" onClick={() => dispatch(decreaseQuantity(item._id))}>
                         <Minus size={14} className="text-green-700" />
                       </button>
                       <span className="font-semibold text-gray-800 w-6 text-center">{item.quantity}</span>
-<<<<<<< Updated upstream
-                      <button aria-label={`Increase ${item.name} quantity`} disabled={maxed} className="bg-white p-1.5 rounded-full hover:bg-green-100 transition border border-gray-200 disabled:cursor-not-allowed disabled:opacity-40"
-                       onClick={() => {
-=======
                       <button aria-label={`Increase ${item.name} quantity`} disabled={maxed} className="bg-white p-1.5 rounded-full hover:bg-green-100 transition border border-gray-200 disabled:cursor-not-allowed disabled:opacity-40" 
-                      onClick={() => {
->>>>>>> Stashed changes
+onClick={() => {
     if (item.quantity < 7) {
-      dispatch(increaseQuantity(String(item._id)));
+      dispatch(increaseQuantity(item._id));
     } else {
-      alert("You cannot add more than 7 items."); 
+      alert("You cannot add more than 7 items.");
     }
   }}>
                         <Plus size={14} className="text-green-700" />

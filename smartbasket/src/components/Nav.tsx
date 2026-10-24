@@ -387,7 +387,7 @@ document.body.classList.add(
                 onSubmit={handleSearch}
                 className="relative flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 shadow-sm"
               >
-                <Search className="mr-2 h-4 w-4 flex-shrink-0 text-slate-400" />
+                <Search className="mr-2 h-4 w-4 shrink-0 text-slate-400" />
 
                 <input
                   type="text"
