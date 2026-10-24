@@ -1,12 +1,13 @@
 'use client'
 
-import AdminSidebar from '@/app/admin/AdminSidebar'
-import { TbCurrencyRupee as PKR } from 'react-icons/tb'
+
+
 import { useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'motion/react'
 import { Boxes, ClipboardCheck, Package, PlusCircle, Truck, Users } from 'lucide-react'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis } from 'recharts'
+
 
 type Props = {
   earning: { today: number; sevenDays: number; total: number }
@@ -41,15 +42,15 @@ export default function AdminDashboardClient({ earning, stats, chartData }: Prop
     <Package key="p" className="text-green-700 w-6 h-6" />,
     <Users key="u" className="text-green-700 w-6 h-6" />,
     <Truck key="t" className="text-green-700 w-6 h-6" />,
-    <PKR key="r" className="text-green-700 w-6 h-6" />,
+   <span key="r" className="text-green-700 text-2xl font-bold">₨</span>,
   ]
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <AdminSidebar />
+    
 
-      <main className="ml-64 min-h-screen">
-        <div className="pt-36 w-[90%] md:w-[80%] mx-auto pb-16">
+      <main className="min-h-screen w-full">
+        <div className="mx-auto w-full max-w-[1200px] px-4 pb-16 pt-24 sm:px-6 lg:px-8">
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-10 text-center sm:text-left">
             <motion.h1

@@ -1,3 +1,4 @@
+
 'use client'
 
 import axios from 'axios'
@@ -15,7 +16,7 @@ const filters: { value: Filter; label: string }[] = [
   { value: 'all', label: 'All orders' },
   { value: 'active', label: 'In progress' },
   { value: 'delivered', label: 'Delivered' },
-  { value: 'cancelled', label: 'Cancelled' }
+  { value: 'cancelled', label: 'Cancelled' },
 ]
 
 export default function MyOrders() {
@@ -32,15 +33,16 @@ export default function MyOrders() {
     async function load() {
       try {
         const { data } = await axios.get('/api/user/my-orders', {
-          signal: controller.signal
+          signal: controller.signal,
         })
 
         setOrders(
           data.map((order: CustomerOrder) => ({
             ...order,
-            _id: String(order._id)
+            _id: String(order._id),
           }))
         )
+        setError('')
       } catch (err) {
         if (!axios.isCancel(err)) {
           setError('We couldn’t load your orders. Please try again.')
@@ -62,7 +64,7 @@ export default function MyOrders() {
 
     const assigned = ({
       orderId,
-      assignedDeliveryBoy
+      assignedDeliveryBoy,
     }: {
       orderId: string
       assignedDeliveryBoy: CustomerOrder['assignedDeliveryBoy']
@@ -77,7 +79,7 @@ export default function MyOrders() {
 
     const updated = ({
       orderId,
-      status
+      status,
     }: {
       orderId: string
       status: OrderStatus
@@ -99,11 +101,16 @@ export default function MyOrders() {
     }
   }, [])
 
-  const active = orders.filter(
-    order =>
-      order.status === 'pending' ||
-      order.status === 'out of delivery'
-  ).length
+  const active = orders.filter(order => {
+    const status = order.status as string
+
+    return (
+      status === 'pending' ||
+      status === 'processing' ||
+      status === 'out for delivery' ||
+      status === 'out of delivery'
+    )
+  }).length
 
   const delivered = orders.filter(
     order => order.status === 'delivered'
@@ -115,7 +122,7 @@ export default function MyOrders() {
     delivered,
     cancelled: orders.filter(
       order => order.status === 'cancelled'
-    ).length
+    ).length,
   }
 
   const visible = orders.filter(
@@ -124,7 +131,12 @@ export default function MyOrders() {
         filter === 'all' ||
         (
           filter === 'active'
-            ? ['pending', 'out of delivery'].includes(order.status)
+            ? [
+                'pending',
+                'processing',
+                'out for delivery',
+                'out of delivery',
+              ].includes(order.status)
             : order.status === filter
         )
       ) &&
@@ -137,7 +149,10 @@ export default function MyOrders() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-green-50 via-white to-green-50 pb-20">
-      <CustomerPageHeader title="My Orders" subtitle="" />
+      <CustomerPageHeader
+        title="My Orders"
+        subtitle=""
+      />
 
       <div className="mx-auto max-w-6xl space-y-6 px-4 pt-7 sm:px-6">
         <details className="rounded-xl border border-green-100 bg-white p-3 shadow-sm">
@@ -215,7 +230,7 @@ export default function MyOrders() {
             ))}
           </div>
         ) : !visible.length ? (
-          <div className="rounded-2xl bg-white px-6 py-14 text-center shadow-md">
+          <div className="rounded-2xl border border-slate-100 bg-white px-6 py-14 text-center shadow-md">
             <PackageSearch
               size={40}
               className="mx-auto text-green-600"

@@ -1,15 +1,15 @@
+
 import type { Metadata } from "next";
 import "./globals.css";
-import Provider from '@/Provider';
-import { StoreIcon } from "lucide-react";
+
+import Provider from "@/Provider";
 import StoreProvider from "@/redux/StoreProvider";
-import InitUser from '@/InitUser';
-
-
+import InitUser from "@/InitUser";
+import Nav from "@/components/Nav";
 
 export const metadata: Metadata = {
   title: "SmartBasket",
-  description: "grocery delivery app",
+  description: "Grocery delivery app",
 };
 
 export default function RootLayout({
@@ -18,12 +18,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="w-full min-h-screen bg-linear-to-b from-green-100 to-white">
+    <html lang="en" suppressHydrationWarning>
+      <body className="w-full min-h-screen overflow-x-hidden bg-linear-to-b from-green-100 to-white antialiased">
         <Provider>
           <StoreProvider>
-           <InitUser/>
-            {children}
+            <InitUser />
+
+            <Nav />
+
+            <main className="smartbasket-main box-border min-h-screen w-full">
+              <div className="smartbasket-page-container box-border min-h-screen w-full min-w-0">
+                {children}
+              </div>
+            </main>
           </StoreProvider>
         </Provider>
       </body>
