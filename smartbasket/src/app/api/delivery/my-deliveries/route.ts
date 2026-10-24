@@ -15,14 +15,14 @@ export async function GET(req: NextRequest) {
     const limit = 10
     // Always scope to the authenticated rider, never a client-supplied userId.
     const scope = { assignedDeliveryBoy: session.user.id }
-    const filter = { ...scope, ...(status === 'all' ? {} : { status: status === 'active' ? { $in: ['pending', 'out of delivery'] } : status }) }
+    const filter = { ...scope, ...(status === 'all' ? {} : { status: status === 'active' ? { $in: ['pending', 'out for delivery'] } : status }) }
     const completed = { ...scope, status: 'delivered', deliveryOtpVerification: true }
     await connectDb()
     const [orders, total, deliveredCount, activeCount, todayCount] = await Promise.all([
       Order.find(filter).select('items.name items.quantity items.unit address.fullName address.fullAddress totalAmount paymentMethod status createdAt deliveredAt deliveryOtpVerification').sort({ createdAt: -1, _id: -1 }).skip((page - 1) * limit).limit(limit).lean(),
       Order.countDocuments(filter),
       Order.countDocuments(completed),
-      Order.countDocuments({ ...scope, status: { $in: ['pending', 'out of delivery'] } }),
+      Order.countDocuments({ ...scope, status: { $in: ['pending', 'out for delivery'] } }),
       Order.countDocuments({ ...completed, deliveredAt: { $gte: deliveryDayStart() } }),
     ])
     return NextResponse.json({

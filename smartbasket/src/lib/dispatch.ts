@@ -18,7 +18,7 @@ export interface IDispatchResult {
 /**
  * Find delivery boys who could take this order and offer it to them.
  *
- * Shared by the admin "out of delivery" transition and by a rider rejecting an
+ * Shared by the admin "out for delivery" transition and by a rider rejecting an
  * assignment, so the two can't drift apart. Passing `excludeIds` keeps riders
  * who have already turned this order down out of the new broadcast.
  *

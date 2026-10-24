@@ -1,4 +1,4 @@
-export type OrderStatus = 'pending' | 'out of delivery' | 'delivered' | 'cancelled'
+export type OrderStatus = 'pending' | 'out for delivery' | 'delivered' | 'cancelled'
 export interface CustomerOrder {
   _id: string
   items: { grocery: string; name: string; price: string; unit: string; image: string; quantity: number }[]

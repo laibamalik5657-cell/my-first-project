@@ -18,7 +18,7 @@ export async function POST(req: NextRequest, context: { params :Promise<{orderId
     const { orderId } = await context.params
     const { status } = await req.json()
 
-    if (!["pending", "out of delivery", "delivered"].includes(status)) {
+    if (!["pending", "out for delivery", "delivered"].includes(status)) {
         return NextResponse.json({ message: "unknown order status" }, { status: 400 })
     }
 
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest, context: { params :Promise<{orderId
     }
     order.status=status
 
-    if (status === "out of delivery" && !order.assignment) {
+    if (status === "out for delivery" && !order.assignment) {
         const { assignment, availableBoys } = await dispatchOrder(order)
 
         if (!assignment) {
