@@ -45,7 +45,7 @@ interface IOrder {
     }
     assignment?: string
     assignedDeliveryBoy?: IUser;
-    status: "pending" | "out of delivery" | "delivered",
+    status: "pending" | "out for delivery" | "delivered",
     createdAt?: string | Date
     updatedAt?: string | Date
 }
@@ -212,7 +212,7 @@ setLoading(true)
         </header>
         <div className="mx-auto max-w-3xl space-y-6 px-4 pt-6 sm:px-6">
           <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-green-100 bg-green-50 p-5 shadow-md">
-            <div className="flex items-center gap-3"><span className="rounded-xl bg-white p-3 text-green-700">{order?.status === 'delivered' ? <CheckCircle2 size={24} /> : <Truck size={24} />}</span><div><h2 className="font-semibold text-green-800">{order?.status === 'delivered' ? 'Order Delivered Successfully! 🎉' : order?.status === 'out of delivery' ? 'Your order is on the way' : 'Preparing your delivery'}</h2><p className="mt-1 text-sm text-green-800">{order?.status === 'delivered' ? 'Thank you for shopping with SmartBasket.' : 'Follow the route and stay in touch with your rider.'}</p></div></div>
+            <div className="flex items-center gap-3"><span className="rounded-xl bg-white p-3 text-green-700">{order?.status === 'delivered' ? <CheckCircle2 size={24} /> : <Truck size={24} />}</span><div><h2 className="font-semibold text-green-800">{order?.status === 'delivered' ? 'Order Delivered Successfully! 🎉' : order?.status === 'out for delivery' ? 'Your order is on the way' : 'Preparing your delivery'}</h2><p className="mt-1 text-sm text-green-800">{order?.status === 'delivered' ? 'Thank you for shopping with SmartBasket.' : 'Follow the route and stay in touch with your rider.'}</p></div></div>
             <span className="rounded-full border border-green-200 bg-white px-3 py-1.5 text-xs font-semibold capitalize text-green-700">{order?.status ?? 'Loading order'}</span>
           </section>
           <div className="grid items-start gap-6">

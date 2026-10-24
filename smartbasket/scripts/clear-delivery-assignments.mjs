@@ -4,7 +4,7 @@
  * Removes the rider-side state only:
  *   - deletes the DeliveryAssignment join documents (assigned + broadcasted)
  *   - detaches `assignedDeliveryBoy` and `assignment` from the affected orders
- *   - returns any "out of delivery" order to "pending"
+ *   - returns any "out for delivery" order to "pending"
  *
  * The customer's Order documents are kept, so nothing is lost and an admin can
  * dispatch them again from Manage Orders. Delivered and cancelled orders are

@@ -1,223 +1,295 @@
+"use client"
 
-'use client'
-
-import { useEffect, useState } from 'react'
+import { getSocket } from '@/lib/socket'
 import axios from 'axios'
-import Link from 'next/link'
-import {
-  MapPin,
-  Package,
-  RefreshCw,
-  Truck,
-  ArrowUpRight,
-  Clock,
-} from 'lucide-react'
+import React, { useEffect, useState } from 'react'
+import { useSelector } from 'react-redux'
+import { RootState } from '@/redux/store'
+import dynamic from 'next/dynamic'
+import { Loader, MapPin, Truck, ShieldCheck } from 'lucide-react'
 
-type Delivery = {
-  _id: string
-  status: 'pending' | 'out for delivery' | 'delivered' | 'cancelled'
-  address: {
-    fullName: string
-    fullAddress: string
-  }
-  createdAt: string
-  items: {
-    name: string
-    quantity: number
-    unit: string
-  }[]
+// Correct component import paths using `@/components/...`
+// Agar aapke components src/components ya components folder me hain:
+import DeliveryChat from '@/components/DeliveryChat' 
+// ya agar components same delivery module me hain, toh path ko folder structure k mutabiq adjust karein:
+// import DeliveryChat from '../DeliveryChat'
+
+const LiveMap = dynamic(() => import('@/components/LiveMap'), {
+  ssr: false,
+  loading: () => <div className="w-full h-[340px] sm:h-[440px] rounded-xl bg-gray-100 animate-pulse" />,
+})
+
+
+interface Ilocation {
+  latitude: number
+  longitude: number
 }
 
-type Result = {
-  deliveries: Delivery[]
-  total: number
-  hasMore: boolean
-}
-
-export default function DeliveryOrderTrackingPage() {
-  const [deliveries, setDeliveries] = useState<Delivery[]>([])
+export default function TrackOrderPage() {
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [revision, setRevision] = useState(0)
+  const [error, setError] = useState("")
+  const { userData } = useSelector((state: RootState) => state.user)
+  const [activeOrder, setActiveOrder] = useState<any>(null)
+  
+  // OTP States
+  const [showOtpBox, setShowOtpBox] = useState(false)
+  const [otpError, setOtpError] = useState("")
+  const [sendOtpLoading, setSendOtpLoading] = useState(false)
+  const [verifyOtpLoading, setVerifyOtpLoading] = useState(false)
+  const [otp, setOtp] = useState("")
+
+  // Location States
+  const [userLocation, setUserLocation] = useState<Ilocation>({ latitude: 0, longitude: 0 })
+  const [deliveryBoyLocation, setDeliveryBoyLocation] = useState<Ilocation>({ latitude: 0, longitude: 0 })
+
+  // 1. Live Location Tracking Setup
+  useEffect(() => {
+    const socket = getSocket()
+    if (!userData?._id || !navigator.geolocation) return
+
+    const watcher = navigator.geolocation.watchPosition(
+      (pos) => {
+        const lat = pos.coords.latitude
+        const lon = pos.coords.longitude
+        setDeliveryBoyLocation({ latitude: lat, longitude: lon })
+        socket.emit("update-location", {
+          userId: userData?._id,
+          latitude: lat,
+          longitude: lon,
+        })
+      },
+      (err) => console.warn(`Geolocation error (${err.code}): ${err.message}`),
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+    )
+
+    return () => navigator.geolocation.clearWatch(watcher)
+  }, [userData?._id])
+
+  // 2. Fetch Active Order
+  const fetchCurrentOrder = async () => {
+    try {
+      const result = await axios.get("/api/delivery/current-order")
+      if (result.data.active && result.data.assignment?.order) {
+        setActiveOrder(result.data.assignment)
+        setUserLocation({
+          latitude: result.data.assignment.order.address.latitude,
+          longitude: result.data.assignment.order.address.longitude,
+        })
+      } else {
+        setActiveOrder(null)
+      }
+    } catch (err) {
+      console.error(err)
+      setError("Could not load your order tracking details. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 3. Socket Listener for Location Updates
+  useEffect(():any => {
+    const socket = getSocket()
+    socket.on("update-deliveryboy-location", ({ userId, location }) => {
+      if (String(userId) !== String(userData?._id) || !Array.isArray(location?.coordinates)) return
+      setDeliveryBoyLocation({
+        latitude: location.coordinates[1],
+        longitude: location.coordinates[0],
+      })
+    })
+
+    return () => socket.off("update-deliveryboy-location")
+  }, [userData?._id])
 
   useEffect(() => {
-    const controller = new AbortController()
+    fetchCurrentOrder()
+  }, [userData?._id])
 
-    async function loadDeliveries() {
-      setLoading(true)
-
-      try {
-        const { data } = await axios.get<Result>(
-          '/api/delivery/my-deliveries',
-          {
-            params: { status: 'active', page: 1 },
-            signal: controller.signal,
-          }
-        )
-
-        setDeliveries(
-          (data.deliveries ?? []).filter(
-            order =>
-              order.status === 'pending' ||
-              order.status === 'out for delivery'
-          )
-        )
-        setError('')
-      } catch (err) {
-        if (!controller.signal.aborted) {
-          setError(
-            axios.isAxiosError(err)
-              ? err.response?.data?.message || 'Could not load active deliveries.'
-              : 'Could not load active deliveries.'
-          )
-        }
-      } finally {
-        if (!controller.signal.aborted) setLoading(false)
-      }
+  // 4. Send OTP Action
+  const sendOtp = async () => {
+    setSendOtpLoading(true)
+    setOtpError("")
+    try {
+      await axios.post("/api/delivery/otp/send", { orderId: activeOrder.order._id })
+      setShowOtpBox(true)
+    } catch (err: any) {
+      setOtpError(err?.response?.data?.message || "Could not send OTP. Please try again.")
+    } finally {
+      setSendOtpLoading(false)
     }
+  }
 
-    void loadDeliveries()
+  // 5. Verify OTP Action
+  const verifyOtp = async () => {
+    setVerifyOtpLoading(true)
+    setOtpError("")
+    try {
+      await axios.post("/api/delivery/otp/verify", {
+        orderId: activeOrder.order._id,
+        otp,
+      })
+      setActiveOrder(null)
+      await fetchCurrentOrder()
+      window.location.reload()
+    } catch (err: any) {
+      setOtpError(err?.response?.data?.message || "Could not verify OTP. Please try again.")
+    } finally {
+      setVerifyOtpLoading(false)
+    }
+  }
 
-    return () => controller.abort()
-  }, [revision])
+  // --- Render Views ---
+
+  if (loading || error) {
+    return (
+      <main className="min-h-screen bg-gradient-to-b from-white to-gray-100 px-4 pb-16 pt-28 sm:px-6 lg:px-10">
+        <div className="mx-auto max-w-3xl rounded-2xl border border-gray-100 bg-white p-10 text-center shadow-sm">
+          {error ? (
+            <>
+              <p role="alert" className="text-sm text-red-700">{error}</p>
+              <button onClick={() => window.location.reload()} className="mt-4 text-sm font-semibold text-green-700">
+                Try again
+              </button>
+            </>
+          ) : (
+            <p role="status" className="text-sm text-gray-500">Loading order tracking…</p>
+          )}
+        </div>
+      </main>
+    )
+  }
+
+  if (!activeOrder) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-white to-green-50 px-4 pb-12 pt-28">
+        <div className="w-full max-w-md text-center">
+          <h1 className="text-2xl font-bold text-gray-800">No Active Delivery To Track 🚚</h1>
+          <p className="mb-5 text-sm text-gray-500">You don't have an active order in progress right now.</p>
+          <button onClick={() => window.location.reload()} className="mt-2 text-sm font-semibold text-green-700 hover:underline">
+            Refresh page
+          </button>
+        </div>
+      </main>
+    )
+  }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-white to-gray-100 px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-6xl space-y-7">
-        <header className="rounded-2xl bg-white p-6 shadow-sm sm:p-8">
-          <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-green-100 p-3 text-green-700">
-              <Truck size={28} />
-            </div>
-
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
-                Order Tracking
-              </h1>
-              <p className="mt-1 text-sm text-gray-500">
-                View your assigned orders and open their tracking pages.
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-5">
-            <p className="text-sm text-gray-600">
-              Active deliveries: <strong>{deliveries.length}</strong>
+    <main className="min-h-screen bg-gradient-to-b from-white to-gray-100 px-4 pb-12 pt-28 sm:px-6 lg:px-10">
+      <div className="mx-auto max-w-3xl space-y-6">
+        
+        {/* Header */}
+        <header className="flex flex-wrap items-center justify-between gap-4 py-2">
+          <div>
+            <h1 className="text-2xl font-bold text-green-700">Track Order</h1>
+            <p className="mt-1 text-sm text-gray-500">
+              Order #{String(activeOrder.order._id).slice(-6)}
             </p>
-
-            <button
-              type="button"
-              onClick={() => setRevision(value => value + 1)}
-              disabled={loading}
-              className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-50"
-            >
-              <RefreshCw
-                size={16}
-                className={loading ? 'animate-spin' : ''}
-              />
-              Refresh
-            </button>
           </div>
+          <span className="inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-4 py-2 text-xs font-semibold text-green-700">
+            <Truck size={16} /> In progress
+          </span>
         </header>
 
-        {error && (
-          <div
-            role="alert"
-            className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700"
-          >
-            {error}
-            <button
-              type="button"
-              onClick={() => setRevision(value => value + 1)}
-              className="ml-2 font-semibold underline"
-            >
-              Try again
-            </button>
-          </div>
-        )}
+        {/* Content Section */}
+        <div className="flex flex-col gap-6">
+          
+          {/* Live Map & Delivery Details */}
+          <section className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-md">
+            <div className="flex items-center gap-2 border-b border-gray-100 px-5 py-4 text-sm font-semibold text-gray-800">
+              <MapPin size={18} className="text-green-600" /> Delivery route
+            </div>
+            <LiveMap userLocation={userLocation} deliveryBoyLocation={deliveryBoyLocation} />
+            <div className="px-5 py-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Deliver to</p>
+              <p className="mt-1 text-sm font-semibold text-gray-800">{activeOrder.order.address?.fullName}</p>
+              <p className="mt-1 text-sm leading-6 text-gray-500">{activeOrder.order.address?.fullAddress}</p>
+            </div>
+          </section>
 
-        {loading ? (
-          <div className="rounded-2xl bg-white p-8 text-center text-gray-500 shadow-sm">
-            Loading active orders...
-          </div>
-        ) : !error && deliveries.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-16 text-center">
-            <Package size={42} className="mx-auto text-green-600" />
-            <h2 className="mt-4 text-lg font-bold text-gray-800">
-              No Active Orders
-            </h2>
-            <p className="mt-2 text-sm text-gray-500">
-              Your assigned pending and in-progress deliveries will appear here.
-            </p>
-          </div>
-        ) : (
-          <div className="grid gap-5 lg:grid-cols-2">
-            {deliveries.map(order => (
-              <article
-                key={order._id}
-                className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition hover:shadow-md sm:p-6"
+          {/* Quick Replies & Chat Section */}
+          <DeliveryChat orderId={activeOrder.order._id} deliveryBoyId={userData?._id?.toString() ?? ''} />
+
+          {/* OTP & Complete Delivery Section */}
+          <section className="w-full rounded-2xl border border-gray-100 bg-white p-5 shadow-md sm:p-6">
+            <div className="mb-5 flex items-start gap-3">
+              <span className="rounded-xl bg-green-50 p-2.5 text-green-700">
+                <ShieldCheck size={22} />
+              </span>
+              <div>
+                <h2 className="font-semibold text-gray-800">Complete delivery</h2>
+                <p className="mt-1 text-xs leading-5 text-gray-500">
+                  Confirm the handoff with the customer’s delivery code.
+                </p>
+              </div>
+            </div>
+
+            {otpError && (
+              <p role="alert" className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                {otpError}
+              </p>
+            )}
+
+            {!activeOrder.order.deliveryOtpVerification && !showOtpBox && (
+              <button
+                disabled={sendOtpLoading}
+                onClick={sendOtp}
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-green-600 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-60"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-                      Order ID
-                    </p>
-                    <h2 className="mt-1 font-bold text-gray-900">
-                      #{order._id.slice(-6).toUpperCase()}
-                    </h2>
-                  </div>
+                {sendOtpLoading ? (
+                  <>
+                    <Loader size={16} className="animate-spin" /> Sending code…
+                  </>
+                ) : (
+                  'Mark as delivered'
+                )}
+              </button>
+            )}
 
-                  <span
-                    className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                      order.status === 'out for delivery'
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'bg-amber-50 text-amber-700'
-                    }`}
-                  >
-                    {order.status === 'out for delivery'
-                      ? 'In Progress'
-                      : 'Assigned'}
-                  </span>
-                </div>
+            {showOtpBox && (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  if (/^\d{4}$/.test(otp) && !verifyOtpLoading) void verifyOtp()
+                }}
+                className="space-y-3"
+              >
+                <label htmlFor="delivery-otp" className="block text-sm font-medium text-gray-700">
+                  Customer’s 4-digit code
+                </label>
+                <input
+                  id="delivery-otp"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={4}
+                  placeholder="0000"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                  className="w-full rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-center text-xl tracking-[0.5em] text-gray-800 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                />
+                <button
+                  type="submit"
+                  disabled={verifyOtpLoading || !/^\d{4}$/.test(otp)}
+                  className="flex w-full items-center justify-center gap-2 rounded-full bg-green-600 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-50"
+                >
+                  {verifyOtpLoading ? (
+                    <>
+                      <Loader size={16} className="animate-spin" /> Verifying…
+                    </>
+                  ) : (
+                    'Verify & complete delivery'
+                  )}
+                </button>
+              </form>
+            )}
 
-                <div className="mt-5 flex items-start gap-3">
-                  <div className="rounded-lg bg-green-50 p-2 text-green-700">
-                    <MapPin size={20} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-semibold text-gray-800">
-                      {order.address?.fullName || 'Customer'}
-                    </p>
-                    <p className="mt-1 text-sm leading-6 text-gray-500">
-                      {order.address?.fullAddress || 'Address unavailable'}
-                    </p>
-                  </div>
-                </div>
+            {activeOrder.order.deliveryOtpVerification && (
+              <p className="rounded-xl bg-green-50 p-4 text-center text-sm font-semibold text-green-700">
+                Delivery completed!
+              </p>
+            )}
+          </section>
 
-                <div className="mt-4 flex items-center gap-2 text-sm text-gray-500">
-                  <Package size={16} />
-                  {order.items?.length ?? 0} product types
-                  <span className="text-gray-300">•</span>
-                  <Clock size={16} />
-                  {order.createdAt
-                    ? new Date(order.createdAt).toLocaleDateString('en-PK')
-                    : 'Date unavailable'}
-                </div>
-
-                <div className="mt-5 border-t border-gray-100 pt-4">
-                  <Link
-                    href={`/user/track-order/${order._id}`}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-green-700"
-                  >
-                    <MapPin size={17} />
-                    Track This Order
-                    <ArrowUpRight size={17} />
-                  </Link>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
+        </div>
       </div>
     </main>
   )

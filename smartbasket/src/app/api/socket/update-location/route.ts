@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
         if (user.role === "deliveryBoy") {
             const activeOrder = await Order.findOne({
                 assignedDeliveryBoy: user._id,
-                status: "out of delivery"
+                status: "out for delivery"
             }).select("_id")
 
             if (activeOrder) {

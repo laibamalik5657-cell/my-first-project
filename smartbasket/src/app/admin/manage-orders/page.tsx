@@ -36,7 +36,7 @@ interface IOrder {
     }
     assignment?: string
     assignedDeliveryBoy?: IUser;
-    status: "pending" | "out of delivery" | "delivered",
+    status: "pending" | "out for delivery" | "delivered",
     createdAt?: string | Date
     updatedAt?: string | Date
 }
@@ -44,7 +44,7 @@ interface IOrder {
 const STATUS_TABS = [
     { value: "all", label: "All orders" },
     { value: "pending", label: "Pending" },
-    { value: "out of delivery", label: "Out for delivery" },
+    { value: "out for delivery", label: "Out for delivery" },
     { value: "delivered", label: "Delivered" },
 ] as const
 
@@ -96,7 +96,7 @@ useEffect(()=>{
     const counts = useMemo(() => ({
         all: orders.length,
         pending: orders.filter(o => o.status === "pending").length,
-        "out of delivery": orders.filter(o => o.status === "out of delivery").length,
+        "out for delivery": orders.filter(o => o.status === "out for delivery").length,
         delivered: orders.filter(o => o.status === "delivered").length,
     }), [orders])
 

@@ -108,7 +108,7 @@ export default function MyOrders() {
       status === 'pending' ||
       status === 'processing' ||
       status === 'out for delivery' ||
-      status === 'out of delivery'
+      status === 'out for delivery'
     )
   }).length
 
@@ -135,7 +135,7 @@ export default function MyOrders() {
                 'pending',
                 'processing',
                 'out for delivery',
-                'out of delivery',
+                'out for delivery',
               ].includes(order.status)
             : order.status === filter
         )
