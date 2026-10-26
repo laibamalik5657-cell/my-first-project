@@ -27,8 +27,8 @@ const CheckOutMap = dynamic(
 const DEFAULT_POSITION: [number, number] = [33.6844, 73.0479]
 
 // Replace these placeholders with your actual Easypaisa details.
-const EASYPAISA_NUMBER = '03XX-XXXXXXX'
-const EASYPAISA_ACCOUNT_NAME = 'SmartBasket'
+const EASYPAISA_NUMBER = '0308-9207701'
+const EASYPAISA_ACCOUNT_NAME = 'Qurat Ul Ain'
 
 type Address = {
     fullName: string

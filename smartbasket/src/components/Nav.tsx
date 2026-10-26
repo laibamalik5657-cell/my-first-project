@@ -96,6 +96,7 @@ export default function Nav({ user: initialUser }: { user?: IUser }) {
   const [suggestions, setSuggestions] = useState<IGroceryItem[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
+  const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [allGroceries, setAllGroceries] = useState<IGroceryItem[]>([])
   const [groceriesLoading, setGroceriesLoading] = useState(false)
 
@@ -773,14 +774,14 @@ document.body.classList.add(
                 <span>Profile</span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => router.push('/user/settings')}
-                className="group relative flex w-full items-center gap-3 rounded-2xl px-3.5 py-2.5 text-left text-sm font-semibold text-slate-600 transition-all duration-300 ease-in-out active:scale-[0.97] hover:scale-[1.02] hover:bg-emerald-50/70 hover:text-[#00c853]"
-              >
-                <Settings className="h-4 w-4 flex-shrink-0 transition-transform duration-200 group-hover:scale-110" />
-                <span>Settings</span>
-              </button>
+          <button
+  type="button"
+  onClick={() => setShowSettingsModal(true)}
+  className="group relative flex w-full items-center gap-3 rounded-2xl px-3.5 py-2.5 text-left text-sm font-semibold text-slate-600 transition-all duration-300 ease-in-out active:scale-[0.97] hover:scale-[1.02] hover:bg-emerald-50/70 hover:text-[#00c853]"
+>
+  <Settings className="h-4 w-4 flex-shrink-0 transition-transform duration-200 group-hover:scale-110" />
+  <span>Settings</span>
+</button>
             </div>
           </div>
 
@@ -821,6 +822,60 @@ document.body.classList.add(
           onClose={() => setShowProfileModal(false)}
         />
       )}
+      
+{/* Settings Modal */}
+{showSettingsModal && (
+  <div
+    className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+    onClick={() => setShowSettingsModal(false)}
+  >
+    <div
+      className="relative w-full max-w-sm rounded-2xl border border-gray-100 bg-white p-6 shadow-2xl"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button
+        type="button"
+        onClick={() => setShowSettingsModal(false)}
+        className="absolute right-4 top-4 rounded-full p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+        aria-label="Close settings"
+      >
+        <X className="h-5 w-5" />
+      </button>
+
+      <h2 className="mb-4 text-center text-xl font-bold text-gray-800">
+        Settings
+      </h2>
+
+      <div className="space-y-4 text-sm">
+        <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 p-3">
+          <div>
+            <p className="font-semibold text-gray-800">Account Status</p>
+            <p className="text-xs text-gray-500">Active and Verified</p>
+          </div>
+          <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
+        </div>
+
+        <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 p-3">
+          <div>
+            <p className="font-semibold text-gray-800">Role</p>
+            <p className="text-xs capitalize text-gray-500">
+              {user.role || 'user'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setShowSettingsModal(false)}
+        className="mt-6 w-full rounded-xl bg-[#00c853] py-2.5 font-semibold text-white shadow-md transition hover:bg-green-700"
+      >
+        Close
+      </button>
+    </div>
+  </div>
+)}
+
 
       <style jsx global>{`
         html,

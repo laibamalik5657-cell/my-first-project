@@ -29,6 +29,27 @@ type Role = "user" | "shopkeeper" | "deliveryBoy";
 type PropType = {
   previousStep?: (s: number) => void;
 };
+const pakistanCities = [
+  "Islamabad",
+  "Rawalpindi",
+  "Lahore",
+  "Karachi",
+  "Peshawar",
+  "Quetta",
+  "Multan",
+  "Faisalabad",
+  "Gujranwala",
+  "Sialkot",
+  "Hyderabad",
+  "Abbottabad",
+  "Bahawalpur",
+  "Sargodha",
+  "Sukkur",
+  "Mardan",
+  "Muzaffarabad",
+  "Gilgit",
+  "Skardu",
+];
 
 function RegisterForm({ previousStep }: PropType) {
   const [name, setName] = useState("");
@@ -50,18 +71,59 @@ function RegisterForm({ previousStep }: PropType) {
   const inputClass =
     "w-full rounded-xl border border-gray-300 bg-white py-3 pl-10 pr-4 text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500";
 
-  const cleanCnic = cnic.replace(/\D/g, "");
+const cleanMobile = mobile.replace(/\D/g, "")
+const cleanCnic = cnic.replace(/\D/g, "")
 
-  const formValidation =
-    name.trim() !== "" &&
-    email.trim() !== "" &&
-    mobile.trim() !== "" &&
-    password.length >= 8 &&
-    password === confirmPassword &&
-    /^\d{11}$/.test(mobile.replace(/\D/g, "")) &&
-    (role === "user" || /^\d{13}$/.test(cleanCnic)) &&
-    (role !== "deliveryBoy" ||
-      (vehicleType.trim() !== "" && deliveryArea.trim() !== ""));
+// Pakistani local mobile format: 03XXXXXXXXX
+const isValidPakistaniMobile = /^03[0-9]{9}$/.test(cleanMobile)
+
+// CNIC format: 12345-1234567-1
+const isValidPakistaniCnic = /^\d{5}-\d{7}-\d{1}$/.test(cnic.trim())
+
+// Vehicle registration input ki length aur allowed characters
+const isValidVehicleNumber =
+  vehicleNumber.trim().length >= 2 &&
+  vehicleNumber.trim().length <= 15 &&
+  /^[A-Za-z0-9 -]+$/.test(vehicleNumber.trim())
+
+// Naam: letters, spaces, apostrophe aur hyphen
+const isValidName =
+  name.trim().length >= 2 &&
+  name.trim().length <= 60 &&
+  /^[A-Za-zÀ-ÿ\s'-]+$/.test(name.trim())
+  const isValidEmail =
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) &&
+  email.trim().length <= 254
+
+ const formValidation =
+  isValidName &&
+ isValidEmail &&
+  mobile === cleanMobile &&
+  isValidPakistaniMobile &&
+password.length >= 8 &&
+password.length <= 12 &&
+/[A-Za-z]/.test(password) &&
+  password === confirmPassword &&
+  (role === "user" || isValidPakistaniCnic) &&
+  (role !== "deliveryBoy" ||
+    (
+      vehicleType.trim() !== "" &&
+      isValidVehicleNumber &&
+      deliveryArea.trim() !== ""
+    ))
+    console.log({
+  name: isValidName,
+  email: isValidEmail,
+  mobile: isValidPakistaniMobile,
+  mobileDigitsOnly: mobile === cleanMobile,
+  passwordLength: password.length >= 8 && password.length <= 12,
+  passwordHasLetter: /[A-Za-z]/.test(password),
+  passwordsMatch: password === confirmPassword,
+  cnic: role === "user" || isValidPakistaniCnic,
+  vehicle: role !== "deliveryBoy" || isValidVehicleNumber,
+  deliveryArea: role !== "deliveryBoy" || deliveryArea.trim() !== "",
+  formValidation,
+});
 
   const handleRegister = async (
     e: React.FormEvent<HTMLFormElement>
@@ -82,7 +144,25 @@ function RegisterForm({ previousStep }: PropType) {
       setError("Password must be at least 8 characters.");
       return;
     }
+if (!isValidName) {
+  setError("Enter a valid name using 2–60 letters, spaces, apostrophes or hyphens.")
+  return
+}
 
+if (!isValidPakistaniMobile) {
+  setError("Enter a valid Pakistani mobile number, e.g. 03001234567.")
+  return
+}
+
+if (role !== "user" && !isValidPakistaniCnic) {
+  setError("Enter a valid 13-digit CNIC in 12345-1234567-1 format.")
+  return
+}
+
+if (role === "deliveryBoy" && !isValidVehicleNumber) {
+  setError("Enter a valid vehicle registration number, maximum 15 characters.")
+  return
+}
     if (!/^\d{11}$/.test(mobile.replace(/\D/g, ""))) {
       setError("Enter a valid 11-digit mobile number.");
       return;
@@ -247,6 +327,7 @@ function RegisterForm({ previousStep }: PropType) {
           <input
             type="email"
             placeholder="Your Email"
+            maxLength={54}
             autoComplete="email"
             className={inputClass}
             value={email}
@@ -293,7 +374,6 @@ function RegisterForm({ previousStep }: PropType) {
                       digits.slice(5, 12) +
                       (digits.length > 12 ? "-" + digits.slice(12) : "")
                     : digits;
-
                 setCnic(formatted);
               }}
               required
@@ -314,33 +394,51 @@ function RegisterForm({ previousStep }: PropType) {
                 required
               >
                 <option value="Bike">Bike</option>
-                <option value="Bicycle">Bicycle</option>
+                <option value="Car">Car</option>
                 <option value="Other">Other</option>
               </select>
             </div>
 
             <div className="relative">
               <Bike className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Vehicle Registration Number (optional)"
-                className={inputClass}
-                value={vehicleNumber}
-                onChange={(e) => setVehicleNumber(e.target.value)}
-              />
+           <input
+  type="text"
+  placeholder="Vehicle Registration Number"
+  maxLength={15}
+  className={inputClass}
+  value={vehicleNumber}
+  onChange={(e) =>
+    setVehicleNumber(
+      e.target.value
+        .replace(/[^A-Za-z0-9 -]/g, "")
+        .slice(0, 12)
+    )
+  }
+/>
             </div>
 
-            <div className="relative">
-              <MapPin className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Delivery Area / City"
-                className={inputClass}
-                value={deliveryArea}
-                onChange={(e) => setDeliveryArea(e.target.value)}
-                required
-              />
-            </div>
+         
+<div>
+  <label className="mb-2 block text-sm font-medium text-gray-700">
+    Delivery Area / City in Pakistan
+  </label>
+
+  <select
+    value={deliveryArea}
+    onChange={(e) => setDeliveryArea(e.target.value)}
+    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500"
+    required
+  >
+    <option value="">Select Pakistani City</option>
+
+    {pakistanCities.map((city) => (
+      <option key={city} value={city}>
+        {city}
+      </option>
+    ))}
+  </select>
+</div>
+
           </>
         )}
 
@@ -348,9 +446,11 @@ function RegisterForm({ previousStep }: PropType) {
           <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
           <input
             type={showPassword ? "text" : "password"}
-            placeholder="Your Password (minimum 8 characters)"
+          
             autoComplete="new-password"
-            minLength={8}
+         placeholder="Password (8–12 characters)"
+minLength={8}
+maxLength={12}
             className={`${inputClass} pr-11`}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
