@@ -1,144 +1,398 @@
-import { ArrowLeft, EyeIcon, EyeOff, Leaf, Loader2, Lock, LogIn, Mail, User } from 'lucide-react'
-import React, { useState } from 'react'
+
+"use client";
+
+import React, { useState } from "react";
+import {
+  ArrowLeft,
+  EyeIcon,
+  EyeOff,
+  Leaf,
+  Loader2,
+  Lock,
+  LogIn,
+  Mail,
+  User,
+  Phone,
+  IdCard,
+  Bike,
+  MapPin,
+  Store,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
-import { motion } from 'motion/react'
-import GoogleSignInButton from './GoogleSignInButton'
-import axios from 'axios'
-import Link from 'next/link'
+import { motion } from "motion/react";
+import GoogleSignInButton from "./GoogleSignInButton";
+import axios from "axios";
+import Link from "next/link";
 
-type propType = {
-  previousStep?: (s: number) => void
-}
+type Role = "user" | "shopkeeper" | "deliveryBoy";
 
-function RegisterForm({ previousStep }: propType) {
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+type PropType = {
+  previousStep?: (s: number) => void;
+};
+
+function RegisterForm({ previousStep }: PropType) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [mobile, setMobile] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [role, setRole] = useState<Role>("user");
+  const [cnic, setCnic] = useState("");
+  const [vehicleType, setVehicleType] = useState("Bike");
+  const [vehicleNumber, setVehicleNumber] = useState("");
+  const [deliveryArea, setDeliveryArea] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const router = useRouter();
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    try {
-      await axios.post('/api/auth/register', {
-        name,
-        email,
-        password,
-      })
-      router.push("/login")
-      setLoading(false)
-    } catch (error) {
-      console.error(error)
-      setLoading(false)
-      const message =
-        axios.isAxiosError(error) && error.response?.data?.message
-          ? error.response.data.message
-          : 'Registration failed. Please try again.'
-      setError(message)
+
+  const inputClass =
+    "w-full rounded-xl border border-gray-300 bg-white py-3 pl-10 pr-4 text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500";
+
+  const cleanCnic = cnic.replace(/\D/g, "");
+
+  const formValidation =
+    name.trim() !== "" &&
+    email.trim() !== "" &&
+    mobile.trim() !== "" &&
+    password.length >= 8 &&
+    password === confirmPassword &&
+    /^\d{11}$/.test(mobile.replace(/\D/g, "")) &&
+    ((role === "user") ||
+      (/^\d{13}$/.test(cleanCnic) && cnic.replace(/[\d-]/g, "") === ""));
+
+  const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError("");
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
     }
-  }
-  const formValidation = name !== '' && email !== '' && password !== ''
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+
+    if (!/^\d{11}$/.test(mobile.replace(/\D/g, ""))) {
+      setError("Enter a valid 11-digit mobile number.");
+      return;
+    }
+
+    if (role !== "user" && !/^\d{13}$/.test(cleanCnic)) {
+      setError("Enter a valid 13-digit CNIC number.");
+      return;
+    }
+
+    if (
+      role === "deliveryBoy" &&
+      (!vehicleType || !deliveryArea.trim())
+    ) {
+      setError("Please enter your vehicle type and delivery area.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await axios.post("/api/auth/register", {
+        name: name.trim(),
+        email: email.trim(),
+        mobile: mobile.replace(/\D/g, ""),
+        password,
+        role,
+        ...(role !== "user" && {
+          cnicNumber: cleanCnic,
+        }),
+        ...(role === "deliveryBoy" && {
+          vehicleType,
+          vehicleNumber: vehicleNumber.trim(),
+          deliveryArea: deliveryArea.trim(),
+        }),
+      });
+
+      if (response.status >= 200 && response.status < 300) {
+        router.push("/login");
+      }
+    } catch (err) {
+      const message =
+        axios.isAxiosError(err) && err.response?.data?.message
+          ? err.response.data.message
+          : "Registration failed. Please try again.";
+
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen px-6 py-10 bg-white relative">
-      <div
-        className="absolute top-6 left-6 flex items-center gap-2 text-green-700 hover:text-green-800 transition-colors cursor-pointer"
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-white px-6 py-10">
+      <button
+        type="button"
         onClick={() => previousStep?.(1)}
+        className="absolute left-6 top-6 flex items-center gap-2 text-green-700 transition-colors hover:text-green-800"
       >
-        <ArrowLeft className="w-5 h-5" />
+        <ArrowLeft className="h-5 w-5" />
         <span className="font-medium">Back</span>
-      </div>
+      </button>
 
       <motion.h1
         initial={{ y: -10, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6 }}
-        className="text-4xl font-extrabold text-green-700 mb-2"
+        className="mb-2 mt-10 text-4xl font-extrabold text-green-700"
       >
         Create Account
       </motion.h1>
 
-      <p className="text-gray-800 mb-8 flex items-center gap-1">
-        Join SmartBasket today <Leaf className="w-5 h-5 text-green-500" />
+      <p className="mb-8 flex items-center gap-1 text-gray-800">
+        Join SmartBasket today
+        <Leaf className="h-5 w-5 text-green-500" />
       </p>
 
       <motion.form
-      onSubmit={handleRegister}
+        onSubmit={handleRegister}
         initial={{ y: 10, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6 }}
-        className="flex flex-col gap-4 w-full max-w-sm"
+        className="flex w-full max-w-sm flex-col gap-4"
       >
+        <label className="text-sm font-semibold text-gray-700">
+          Register As
+        </label>
+
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { value: "user", label: "Customer", Icon: User },
+            { value: "shopkeeper", label: "Shopkeeper", Icon: Store },
+            { value: "deliveryBoy", label: "Delivery Boy", Icon: Bike },
+          ].map(({ value, label, Icon }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => {
+                setRole(value as Role);
+                setError("");
+              }}
+              className={`flex min-h-20 flex-col items-center justify-center gap-2 rounded-xl border p-2 text-xs font-semibold transition ${
+                role === value
+                  ? "border-green-600 bg-green-50 text-green-800 ring-2 ring-green-100"
+                  : "border-gray-200 text-gray-600 hover:border-green-400"
+              }`}
+            >
+              <Icon className="h-5 w-5" />
+              {label}
+            </button>
+          ))}
+        </div>
+
         <div className="relative">
-          <User className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+          <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
           <input
             type="text"
             placeholder="Your Name"
-            className="w-full pr-4 py-3 pl-10 border border-gray-300 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500"
-            onChange={(e) => setName(e.target.value)}
+            autoComplete="name"
+            className={inputClass}
             value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
           />
         </div>
 
         <div className="relative">
-          <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+          <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
           <input
             type="email"
             placeholder="Your Email"
-            className="w-full pr-4 py-3 pl-10 border border-gray-300 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500"
-            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            className={inputClass}
             value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
           />
         </div>
 
         <div className="relative">
-          <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+          <Phone className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
           <input
-            type={showPassword ? 'text' : 'password'}
-            placeholder="Your Password"
-            className="w-full pr-4 py-3 pl-10 border border-gray-300 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500"
-            onChange={(e) => setPassword(e.target.value)}
-            value={password}
+            type="tel"
+            placeholder="Mobile Number (03XXXXXXXXX)"
+            autoComplete="tel"
+            maxLength={11}
+            className={inputClass}
+            value={mobile}
+            onChange={(e) =>
+              setMobile(e.target.value.replace(/\D/g, "").slice(0, 11))
+            }
+            required
           />
-          {showPassword ? (
-            <EyeOff
-              className="absolute right-3 top-3.5 w-5 h-5 text-gray-500 cursor-pointer"
-              onClick={() => setShowPassword(false)}
-            />
-          ) : (
-            <EyeIcon
-              className="absolute right-3 top-3.5 w-5 h-5 text-gray-500 cursor-pointer"
-              onClick={() => setShowPassword(true)}
-            />
-          )}
         </div>
+
+        {role !== "user" && (
+          <div className="relative">
+            <IdCard className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="CNIC Number (12345-1234567-1)"
+              inputMode="numeric"
+              maxLength={15}
+              className={inputClass}
+              value={cnic}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, "").slice(0, 13);
+                const formatted =
+                  digits.length > 5
+                    ? digits.slice(0, 5) +
+                      "-" +
+                      digits.slice(5, 12) +
+                      (digits.length > 12 ? "-" + digits.slice(12) : "")
+                    : digits;
+                setCnic(formatted);
+              }}
+              required
+            />
+          </div>
+        )}
+
+        {role === "deliveryBoy" && (
+          <>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700">
+                Vehicle Type
+              </label>
+              <select
+                value={vehicleType}
+                onChange={(e) => setVehicleType(e.target.value)}
+                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500"
+                required
+              >
+                <option value="Bike">Bike</option>
+                <option value="Car">car</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div className="relative">
+              <Bike className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Vehicle Registration Number (optional)"
+                className={inputClass}
+                value={vehicleNumber}
+                onChange={(e) => setVehicleNumber(e.target.value)}
+              />
+            </div>
+
+            <div className="relative">
+              <MapPin className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Delivery Area / City"
+                className={inputClass}
+                value={deliveryArea}
+                onChange={(e) => setDeliveryArea(e.target.value)}
+                required
+              />
+            </div>
+          </>
+        )}
+
+        <div className="relative">
+          <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+          <input
+            type={showPassword ? "text" : "password"}
+            placeholder="Your Password (minimum 8 characters)"
+            autoComplete="new-password"
+            minLength={8}
+            className={`${inputClass} pr-11`}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <button
+            type="button"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            className="absolute right-3 top-3.5 text-gray-500"
+            onClick={() => setShowPassword(!showPassword)}
+          >
+            {showPassword ? <EyeOff size={20} /> : <EyeIcon size={20} />}
+          </button>
+        </div>
+
+        <div className="relative">
+          <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+          <input
+            type={showConfirmPassword ? "text" : "password"}
+            placeholder="Confirm Password"
+            autoComplete="new-password"
+            className={`${inputClass} pr-11`}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+          />
+          <button
+            type="button"
+            aria-label={
+              showConfirmPassword ? "Hide password" : "Show password"
+            }
+            className="absolute right-3 top-3.5 text-gray-500"
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+          >
+            {showConfirmPassword ? (
+              <EyeOff size={20} />
+            ) : (
+              <EyeIcon size={20} />
+            )}
+          </button>
+        </div>
+
+        {role !== "user" && (
+          <p className="rounded-xl bg-green-50 p-3 text-xs leading-5 text-green-800">
+            Please provide accurate identity details. Entering a CNIC number
+            does not itself verify your identity.
+          </p>
+        )}
+
+        {error && (
+          <p role="alert" className="text-sm text-red-600">
+            {error}
+          </p>
+        )}
 
         <button
           type="submit"
-          className="w-full rounded-xl bg-green-600 px-4 py-3 text-white font-semibold hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-green-300"
           disabled={!formValidation || loading}
+          className="w-full rounded-xl bg-green-600 px-4 py-3 font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-green-300"
         >
-          {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Register'}
+          {loading ? (
+            <Loader2 className="mx-auto h-5 w-5 animate-spin" />
+          ) : (
+            "Register"
+          )}
         </button>
-        {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
 
-        <div className="relative my-4 flex items-center justify-center">
+        <div className="relative my-2 flex items-center justify-center">
           <div className="absolute inset-x-0 h-px bg-gray-300" />
-          <span className="relative bg-white px-3 text-sm font-medium text-gray-400">OR</span>
+          <span className="relative bg-white px-3 text-sm font-medium text-gray-400">
+            OR
+          </span>
         </div>
-
       </motion.form>
+
       <GoogleSignInButton />
-      <p className=" cursor-pointer mt-6 text-gray-600 text-sm flex items-center gap-1">
+
+      <p className="mt-6 flex flex-wrap items-center justify-center gap-1 text-sm text-gray-600">
         Already have an account?
-        <LogIn className="w-4 h-4" /> 
-       <Link href="/login" className="text-green-600 hover:underline">Sign in</Link>
+        <LogIn className="h-4 w-4" />
+        <Link href="/login" className="text-green-600 hover:underline">
+          Sign in
+        </Link>
       </p>
     </div>
-  )
+  );
 }
 
-export default RegisterForm
+export default RegisterForm;

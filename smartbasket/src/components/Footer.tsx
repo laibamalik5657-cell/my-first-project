@@ -4,44 +4,63 @@
 import React from 'react'
 import { motion } from 'motion/react'
 import Link from 'next/link'
-import { Mail, MapPin, Phone, Clock } from 'lucide-react'
-import { FaFacebook, FaInstagram, FaTwitter } from 'react-icons/fa6'
+import {
+  Mail,
+  MapPin,
+  Phone,
+  Clock,
+  ShoppingBasket,
+  Truck,
+  ShieldCheck,
+  MessageCircle,
+} from 'lucide-react'
 
 function Footer() {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 40 }}
+    <motion.footer
+      initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.3 }}
-      transition={{ duration: 0.6, ease: 'easeOut' }}
-      className="bg-linear-to-r from-green-600 to-green-700 text-white mt-20"
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
+      className="mt-12 bg-linear-to-r from-green-600 to-green-700 text-white"
     >
-      <div className="w-[90%] md:w-[80%] mx-auto py-10 grid grid-cols-1 md:grid-cols-3 gap-10 border-b border-green-500/40">
-        <div>
-          <h2 className="text-2xl font-bold mb-3">SmartBasket</h2>
+      <div className="mx-auto grid w-[92%] max-w-7xl grid-cols-1 gap-9 border-b border-green-500/40 py-10 sm:grid-cols-2 lg:grid-cols-4">
 
-          <p className="text-sm text-green-100 leading-relaxed">
-            Your one-stop online grocery store delivering freshness to your doorstep.
-            Shop smart, eat fresh, and save more every day!
+        <div>
+          <Link href="/" className="mb-4 inline-flex items-center gap-2">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15">
+              <ShoppingBasket size={26} />
+            </span>
+            <span className="text-2xl font-bold">SmartBasket</span>
+          </Link>
+
+          <p className="text-sm leading-6 text-green-100">
+            Your everyday grocery partner. Shop for your daily essentials
+            and enjoy a convenient grocery delivery experience.
           </p>
         </div>
 
         <div>
-          <h2 className="text-xl font-semibold mb-3">Quick Links</h2>
+          <h2 className="mb-4 text-lg font-semibold">Quick Links</h2>
 
-          <ul className="space-y-2 text-green-100 text-sm">
+          <ul className="space-y-3 text-sm text-green-100">
             <li>
               <Link href="/" className="transition hover:text-white">
                 Home
               </Link>
             </li>
             <li>
-              <Link href="/user/cart" className="transition hover:text-white">
-                Cart
+              <Link href="/about" className="transition hover:text-white">
+                About Us
               </Link>
             </li>
             <li>
-              <Link href="/my-orders" className="transition hover:text-white">
+              <Link href="/user/cart" className="transition hover:text-white">
+                My Cart
+              </Link>
+            </li>
+            <li>
+              <Link href="/user/my-orders" className="transition hover:text-white">
                 My Orders
               </Link>
             </li>
@@ -49,31 +68,78 @@ function Footer() {
         </div>
 
         <div>
-          <h3 className="text-xl font-semibold mb-3">Contact Us</h3>
+          <h2 className="mb-4 text-lg font-semibold">Our Services</h2>
 
-          <ul className="space-y-3 text-green-100 text-sm">
-            <li className="flex items-center gap-2">
-              <MapPin size={16} className="shrink-0" />
+          <ul className="space-y-4 text-sm text-green-100">
+            <li className="flex items-start gap-3">
+              <ShoppingBasket size={19} className="mt-0.5 shrink-0 text-green-200" />
+              <div>
+                <p className="font-medium text-white">Online Grocery Shopping</p>
+                <p className="mt-1 text-xs leading-5">
+                  Browse and order everyday grocery essentials.
+                </p>
+              </div>
+            </li>
+
+            <li className="flex items-start gap-3">
+              <Truck size={19} className="mt-0.5 shrink-0 text-green-200" />
+              <div>
+                <p className="font-medium text-white">Order Tracking</p>
+                <p className="mt-1 text-xs leading-5">
+                  Follow your delivery progress.
+                </p>
+              </div>
+            </li>
+
+            <li className="flex items-start gap-3">
+              <ShieldCheck size={19} className="mt-0.5 shrink-0 text-green-200" />
+              <div>
+                <p className="font-medium text-white">OTP Delivery Confirmation</p>
+                <p className="mt-1 text-xs leading-5">
+                  Confirm delivery through a verification code.
+                </p>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <h2 className="mb-4 text-lg font-semibold">Contact Us</h2>
+
+          <ul className="space-y-4 text-sm text-green-100">
+            <li className="flex items-start gap-3">
+              <MapPin size={18} className="mt-0.5 shrink-0 text-green-200" />
               <span>Rawalpindi, Pakistan</span>
             </li>
 
-            <li className="flex items-center gap-2">
-              <Phone size={16} className="shrink-0" />
-              <span>Customer Support</span>
+            <li className="flex items-start gap-3">
+              <Phone size={18} className="mt-0.5 shrink-0 text-green-200" />
+              <div>
+                <p className="font-medium text-white">Phone Number</p>
+                <a href="tel:+923001234567" className="transition hover:text-white">
+                  +92 300 1234567
+                </a>
+              </div>
             </li>
 
-            <li className="flex items-center gap-2">
-              <Mail size={16} className="shrink-0" />
-              <a
-                href="mailto:support@smartbasket.in"
-                className="transition hover:text-white"
-              >
-                support@smartbasket.in
-              </a>
+            <li className="flex items-start gap-3">
+              <MessageCircle size={18} className="mt-0.5 shrink-0 text-green-200" />
+              <div>
+                <p className="font-medium text-white">WhatsApp Support</p>
+                <a
+                  href="https://wa.me/923001234567"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transition hover:text-white"
+                >
+                  +92 300 1234567
+                </a>
+              </div>
             </li>
 
-            <li className="flex items-start gap-2">
-              <Clock size={16} className="mt-0.5 shrink-0" />
+            
+            <li className="flex items-start gap-3">
+              <Clock size={18} className="mt-0.5 shrink-0 text-green-200" />
               <div>
                 <p className="font-medium text-white">Website Timings</p>
                 <p>Monday – Sunday</p>
@@ -81,46 +147,15 @@ function Footer() {
               </div>
             </li>
           </ul>
-
-          <div className="flex gap-4 mt-4">
-            <a
-              href="https://facebook.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Facebook"
-              className="transition hover:text-white"
-            >
-              <FaFacebook size={20} />
-            </a>
-
-            <a
-              href="https://instagram.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Instagram"
-              className="transition hover:text-white"
-            >
-              <FaInstagram size={20} />
-            </a>
-
-            <a
-              href="https://twitter.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Twitter"
-              className="transition hover:text-white"
-            >
-              <FaTwitter size={20} />
-            </a>
-          </div>
         </div>
+
       </div>
 
-      <div className="text-center py-4 text-sm text-green-100 bg-green-800/40">
+      <div className="bg-green-800/40 py-4 text-center text-sm text-green-100">
         © {new Date().getFullYear()}{' '}
         <span className="font-semibold">SmartBasket</span>. All rights reserved.
       </div>
-    </motion.div>
+    </motion.footer>
   )
 }
 
