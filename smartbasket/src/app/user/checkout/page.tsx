@@ -149,6 +149,45 @@ export default function Checkout() {
     const [proofFile, setProofFile] = useState<File | null>(null)
     const [proofPreview, setProofPreview] = useState('')
     const [proofMessage, setProofMessage] = useState('')
+    
+useEffect(() => {
+    const savedDraft = sessionStorage.getItem(
+        'smartbasket_checkout_draft'
+    )
+
+    if (!savedDraft) return
+
+    try {
+        const draft = JSON.parse(savedDraft)
+
+        if (draft.addressDraft) {
+            setAddress((previous) => ({
+                ...previous,
+                ...draft.addressDraft,
+            }))
+        }
+
+        if (draft.paymentMethod) {
+            setPaymentMethod(draft.paymentMethod)
+        }
+
+        if (
+            Array.isArray(draft.position) &&
+            draft.position.length === 2
+        ) {
+            setPosition(draft.position)
+        }
+
+        if (typeof draft.searchQuery === 'string') {
+            setSearchQuery(draft.searchQuery)
+        }
+    } catch {
+        sessionStorage.removeItem(
+            'smartbasket_checkout_draft'
+        )
+    }
+}, [])
+
 
     // Clean up the screenshot preview URL.
     useEffect(() => {
@@ -410,6 +449,30 @@ export default function Checkout() {
         return true
     }, [address, cartData.length])
 
+const requireCustomerLogin = (): boolean => {
+    if (userData?._id) {
+        return true
+    }
+
+    // Checkout details temporarily save karo.
+    sessionStorage.setItem(
+        'smartbasket_checkout_draft',
+        JSON.stringify({
+            addressDraft,
+            paymentMethod,
+            position,
+            searchQuery,
+        })
+    )
+
+    // Login ke baad checkout par wapas aana hai.
+    router.push(
+        '/login?callbackUrl=%2Fuser%2Fcheckout'
+    )
+
+    return false
+}
+
     // Place the order.
     const placeOrder = async (
         method: PaymentMethod,
@@ -444,8 +507,12 @@ export default function Checkout() {
                 },
             })
 
-            dispatch(clearCart())
-            router.push('/user/order-success')
+          sessionStorage.removeItem(
+    'smartbasket_checkout_draft'
+)
+
+dispatch(clearCart())
+router.push('/user/order-success')
         } catch (error: unknown) {
             if (axios.isAxiosError(error)) {
                 setOrderError(
@@ -554,20 +621,27 @@ export default function Checkout() {
         }))
     }
 
-    const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-        event.preventDefault()
+  
+const handleSubmit = (
+    event: FormEvent<HTMLFormElement>
+) => {
+    event.preventDefault()
 
-        if (orderLoading) return
+    if (orderLoading) return
 
-        if (paymentMethod === 'cod') {
-            void placeOrder('cod')
-        } else {
-            void handleOnlineOrder()
-        }
+    // Guest user ko login par bhejo.
+    if (!requireCustomerLogin()) return
+
+    if (paymentMethod === 'cod') {
+        void placeOrder('cod')
+    } else {
+        void handleOnlineOrder()
     }
+}
+
 
     return (
-        <main className="min-h-screen bg-white to-green-50 pb-20">
+        <main className="min-h-screen bg-[#f0fdf4] to-green-50 pb-20">
             <div className="mx-auto w-[95%] max-w-6xl pt-8 sm:w-[90%]">
                 <div className="relative flex items-center justify-center">
                     <Link

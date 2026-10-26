@@ -1,5 +1,5 @@
 'use client';
-
+import CustomerPageHeader from '@/components/CustomerPageHeader';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -26,9 +26,9 @@ export default function TrackOrdersPage() {
         setOrders(
           Array.isArray(data)
             ? data.map((order) => ({
-                ...order,
-                _id: String(order._id),
-              }))
+              ...order,
+              _id: String(order._id),
+            }))
             : []
         );
       } catch {
@@ -51,26 +51,11 @@ export default function TrackOrdersPage() {
   return (
     <main className="min-h-screen w-full bg-transparent px-4 py-6 sm:px-6 md:px-8">
       <div className="mx-auto w-full max-w-5xl">
-        
-        {/* Page heading */}
-        <div className="mb-6 flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-500">
-          <Link
-            href="/user/my-orders"
-            aria-label="Back to my orders"
-            className="rounded-full bg-white p-2.5 text-green-700 shadow-sm transition-all duration-300 hover:bg-green-50 hover:shadow-md hover:-translate-x-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
-          >
-            <ArrowLeft size={19} />
-          </Link>
-
-          <div>
-       
-           <h1 className="mt-0.5 text-xl font-bold tracking-tight font-black text-black text-gray-900 sm:text-2xl">
-  Track Order
-</h1>
-           
-          </div>
-        </div>
-
+<CustomerPageHeader
+  title="Track Order"
+  subtitle="Real-time delivery status"
+  backHref="/user/my-orders"
+/>
         {/* Loading state */}
         {loading ? (
           <div className="grid gap-4 sm:grid-cols-2">

@@ -20,6 +20,7 @@ import {
   PanelLeftOpen,
   ShoppingBasket,
   ShoppingCartIcon,
+  LogIn, UserPlus, ArrowRight
 
 } from 'lucide-react'
 import { signOut, useSession } from 'next-auth/react'
@@ -108,9 +109,7 @@ export default function Nav({ user: initialUser }: { user?: IUser }) {
   const normalizedPath =
     (pathname || '/').replace(/\/+$/, '') || '/'
 
-  const isSelectRoleScreen =
-    normalizedPath === '/' &&
-    (!user.mobile || !user.role)
+const isSelectRoleScreen = false
 
   const isPublicRoute =
     isSelectRoleScreen ||
@@ -130,7 +129,8 @@ export default function Nav({ user: initialUser }: { user?: IUser }) {
     .toLowerCase()
     .replace(/[\s_-]/g, '')
 
-  const isCustomer = role === 'user' || role === 'customer'
+ const isCustomer =
+  !user._id || role === 'user' || role === 'customer'
   const isAdmin = role === 'admin'
   const isShopkeeper = role === 'shopkeeper'
   const isDelivery = ['deliveryboy', 'delivery'].includes(role)
@@ -381,7 +381,7 @@ document.body.classList.add(
           {isCustomer && (
             <div
               ref={searchContainerRef}
-              className="relative hidden w-1/3 max-w-md lg:block"
+         className="relative mx-auto hidden w-1/2 max-w-lg lg:block"
             >
               <form
                 onSubmit={handleSearch}
@@ -482,7 +482,25 @@ document.body.classList.add(
               )}
             </div>
           )}
+{!session?.user && !storedUser?._id && !initialUser?._id && (
+  <div className="flex items-center gap-3 mr-8">
+    <Link
+      href="/login"
+      className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/60 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-sm transition-all duration-200 hover:bg-white/20 hover:border-white active:scale-95"
+    >
+      <LogIn size={17} />
+      <span>Login</span>
+    </Link>
 
+    <Link
+      href="/register"
+      className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-[#00c853] shadow-sm transition-all duration-200 hover:bg-emerald-50 hover:shadow-md active:scale-95"
+    >
+      <UserPlus size={17} />
+      <span>Sign Up</span>
+    </Link>
+  </div>
+)}
           <div className="flex items-center gap-2 sm:gap-4">
             {isCustomer && (
               <Link

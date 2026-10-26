@@ -7,6 +7,10 @@ export interface IUser{
     email: string
     password?:string
     mobile?: string
+    cnicNumber?: string;
+vehicleType?: string;
+vehicleNumber?: string;
+deliveryArea?: string;
     role: "user" | "deliveryBoy" | "admin" | "shopkeeper"
     image: string;
     location?: {
@@ -48,6 +52,22 @@ const userSchema = new mongoose.Schema<IUser>(
             type: String,
             required: false
         },
+        cnicNumber: {
+    type: String,
+    required: false
+},
+vehicleType: {
+    type: String,
+    required: false
+},
+vehicleNumber: {
+    type: String,
+    required: false
+},
+deliveryArea: {
+    type: String,
+    required: false
+},
         role: {
             type: String,
             enum: ["user", "deliveryBoy", "admin", "shopkeeper"],

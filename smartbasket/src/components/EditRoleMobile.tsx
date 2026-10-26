@@ -58,10 +58,10 @@ function EditRoleMobile({
         mobile,
       })
 
-      await update({ role: selectedRole })
+await update()
 
-      router.push('/')
-      router.refresh()
+router.replace('/')
+router.refresh()
     } catch (err: any) {
       setError(
         err?.response?.data?.message ||
