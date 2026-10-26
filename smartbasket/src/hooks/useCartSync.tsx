@@ -25,10 +25,10 @@ function useCartSync() {
     // load (and merge) once per authenticated session
     useEffect(() => {
         if (status !== 'authenticated') {
-            if (status === 'unauthenticated') {
-                loadedFor.current = null
-                dispatch(setCartHydrated(false))
-            }
+          if (status === 'unauthenticated') {
+    loadedFor.current = null
+    dispatch(setCartHydrated(true))
+}
             return
         }
         if (loadedFor.current === 'done') return

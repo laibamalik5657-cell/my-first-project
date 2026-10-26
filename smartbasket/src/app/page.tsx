@@ -2,7 +2,7 @@ import { auth } from '@/auth'
 import AdminDashboard from '@/components/AdminDashboard'
 import ShopkeeperDashboard from '@/components/ShopkeeperDashboard'
 import DeliveryBoy from '@/components/DeliveryBoy'
-import EditRoleMobile from '@/components/EditRoleMobile'
+
 import GeoUpdater from '@/components/GeoUpdater'
 import Nav from '@/components/Nav'
 import UserDashboard from '@/components/UserDashboard'
@@ -25,23 +25,19 @@ async function Home(props: {
     await connectDb()
     const session = await auth()
 
-    if (!session?.user?.id) {
-        redirect("/login")
-    }
+  const user = session?.user?.id
+    ? await User.findById(session.user.id).lean()
+    : null
+    console.log("SESSION ROLE:", session?.user?.role)
+console.log("DATABASE USER ROLE:", user?.role)
 
-    const user = await User.findById(session.user.id).lean()
+const plainUser = user
+    ? JSON.parse(JSON.stringify(user))
+    : null
 
-    if (!user) {
-        redirect("/login")
-    }
 
-    const inComplete = !user.mobile || !user.role || (!user.mobile && user.role === "user")
 
-    if (inComplete) {
-        return <EditRoleMobile assignedRole={user.role} />
-    }
 
-    const plainUser = JSON.parse(JSON.stringify(user))
     const NavComponent = Nav as React.ComponentType<any>
 
     const q = searchParams?.q?.trim() || undefined
@@ -50,7 +46,7 @@ async function Home(props: {
     let groceryList: any[] = []
     let total = 0
 
-    if (user.role === "user") {
+   if (!user || user.role === "user") { 
         // Same filter the API uses: unavailable and out-of-stock items are never listed.
         const filter: Record<string, any> = { ...sellableFilter }
         if (category) {
@@ -77,27 +73,39 @@ async function Home(props: {
     }
 
     return (
-        <>
-            <NavComponent user={plainUser} />
-            <GeoUpdater userId={plainUser?._id} />
-            {user.role === "user" ? (
-                <UserDashboard
-                    groceryList={groceryList}
-                    hasMore={total > groceryList.length}
-                    total={total}
-                    q={q}
-                    category={category}
-                />
-            ) : user.role === "admin" ? (
-                <AdminDashboard />
-            ) : user.role === "shopkeeper" ? (
-                <ShopkeeperDashboard />
-            ) : (
-                <DeliveryBoy />
-            )}
-            <Footer />
-        </>
-    )
+  <div className="flex min-h-screen flex-col">
+    <NavComponent user={plainUser} />
+    <GeoUpdater userId={plainUser?._id} />
+
+<main className="flex flex-1 flex-col">
+  {!user || user.role === "user" ? (
+    <UserDashboard
+      groceryList={groceryList}
+      hasMore={total > groceryList.length}
+      total={total}
+      q={q}
+      category={category}
+    />
+  ) : user.role === "admin" ? (
+    <AdminDashboard />
+  ) : user.role === "shopkeeper" ? (
+    <ShopkeeperDashboard />
+  ) : (
+    <DeliveryBoy />
+  )}
+</main>
+
+  {!user || user.role === 'user' ?  (
+      <Footer />
+    ) : (
+      <footer className="mt-auto w-full bg-green-800/40 py-3 text-center text-xs text-green-100">
+        © {new Date().getFullYear()}{' '}
+        <span className="font-semibold text-white">SmartBasket</span>.
+        {' '}All rights reserved.
+      </footer>
+    )}
+  </div>
+)
 }
 
 export default Home

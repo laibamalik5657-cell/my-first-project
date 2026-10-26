@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { motion } from 'motion/react'
 import GoogleSignInButton from '@/components/GoogleSignInButton'
 import { signIn, useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter , useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
 function Login() {
@@ -13,6 +13,7 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [error, setError] = useState('')
   useSession()
 
@@ -30,8 +31,14 @@ function Login() {
         setError('Login failed. Please check your credentials.')
       } else {
         setError('')
-        router.push('/')
-        router.refresh()
+      const callbackUrl = searchParams.get('callbackUrl')
+
+router.push(
+    callbackUrl?.startsWith('/') && !callbackUrl.startsWith('//')
+        ? callbackUrl
+        : '/'
+)
+router.refresh()
       }
     } catch (err) {
       console.error(err)

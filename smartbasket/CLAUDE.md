@@ -100,7 +100,7 @@ When adding an event, update the emitter (a route or a component), the socket se
 
 ### Order lifecycle
 1. `POST /api/user/order` creates the order (`pending`, `cod` or `online`).
-2. Admin sets the status to `out of delivery` (`/api/admin/update-order-status/[orderId]`). This finds delivery boys within 10 km via a `$near` query on `User.location` (GeoJSON `[lng, lat]`), creates a `DeliveryAssignment`, and sends `new-assignment` to each delivery boy's socket.
+2. Admin sets the status to `out for delivery` (`/api/admin/update-order-status/[orderId]`). This finds delivery boys within 10 km via a `$near` query on `User.location` (GeoJSON `[lng, lat]`), creates a `DeliveryAssignment`, and sends `new-assignment` to each delivery boy's socket.
 3. A delivery boy accepts (`/api/delivery/assignment/[id]/accept-assignment`), which sets `order.assignedDeliveryBoy` and removes that boy from other broadcasts.
 4. `/api/delivery/otp/send` emails a 4-digit OTP to the customer, and `/otp/verify` marks the order delivered.
 
@@ -149,7 +149,7 @@ Order chat uses `Message` documents whose `roomId` is the order id. `/api/chat/a
 ## Dispatch, tracking and OTP
 
 - `src/lib/dispatch.ts` (`dispatchOrder`) owns finding nearby, non-busy, active delivery
-  boys and broadcasting to them. Both the admin "out of delivery" transition and
+  boys and broadcasting to them. Both the admin "out for delivery" transition and
   `reject-assignment` call it; rejections are recorded on `DeliveryAssignment.rejectedBy`
   so a re-broadcast skips them.
 - `DeliveryTracking` stores a throttled breadcrumb trail per order, written by

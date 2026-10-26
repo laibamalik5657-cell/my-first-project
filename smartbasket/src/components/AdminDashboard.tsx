@@ -69,4 +69,3 @@ return (
 )
 }
 export default AdminDashboard
-

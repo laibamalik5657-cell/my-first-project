@@ -55,7 +55,7 @@ export async function updateManagedUser(id: string, input: unknown, actorId: str
     if (!others) throw new UserInputError('Keep at least one active admin account', 409)
   }
   if (current.role === 'deliveryBoy' && (data.isActive === false || (data.role && data.role !== 'deliveryBoy'))) {
-    if (await Order.exists({ assignedDeliveryBoy: id, status: { $in: ['pending', 'out of delivery'] } })) {
+    if (await Order.exists({ assignedDeliveryBoy: id, status: { $in: ['pending', 'out for delivery'] } })) {
       throw new UserInputError('This rider has an active delivery. Complete or reassign it first.', 409)
     }
   }

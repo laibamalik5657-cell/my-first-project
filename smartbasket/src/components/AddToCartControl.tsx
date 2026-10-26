@@ -25,7 +25,7 @@ function AddToCartControl({ item, size = "sm" }: { item: IGrocery; size?: "sm" |
 
     const stock = item.stock ?? 0
     const outOfStock = stock < 1
-    const atStockLimit = Boolean(cartItem && cartItem.quantity >= stock)
+const atStockLimit = Boolean(cartItem && (cartItem.quantity >= stock || cartItem.quantity >= 7))
 
     if (outOfStock) {
         return (
@@ -69,19 +69,21 @@ function AddToCartControl({ item, size = "sm" }: { item: IGrocery; size?: "sm" |
                 {cartItem.quantity}
             </span>
 
-            <button
-                aria-label={`Add one ${item.name}`}
-                disabled={atStockLimit}
-                title={atStockLimit ? `Only ${stock} left in stock` : undefined}
-                className="w-7 h-7 flex items-center justify-center rounded-full bg-green-100 hover:bg-green-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-              onClick={() => {
-    if (cartItem.quantity < 7) {
-        dispatch(increaseQuantity(String(item._id)));
+           <button
+    aria-label={`Add one ${item.name}`}
+    disabled={atStockLimit}
+    title={
+        atStockLimit
+            ? cartItem.quantity >= 7
+                ? "Maximum limit of 7 items reached"
+                : `Only ${stock} left in stock`
+            : undefined
     }
-}}
-            >
-                <Plus size={16} className="text-green-700" />
-            </button>
+    className="w-7 h-7 flex items-center justify-center rounded-full bg-green-100 hover:bg-green-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+    onClick={() => dispatch(increaseQuantity(String(item._id)))}
+>
+    <Plus size={16} className="text-green-700" />
+</button>
         </motion.div>
     )
 }

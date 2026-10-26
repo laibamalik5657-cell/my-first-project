@@ -31,7 +31,7 @@ address: {
 }
 assignment?:mongoose.Types.ObjectId
 assignedDeliveryBoy?:mongoose.Types.ObjectId
-status: "pending" | "out of delivery" | "delivered" | "cancelled",
+status: "pending" | "out for delivery" | "delivered" | "cancelled",
 cancelledAt?: Date
 createdAt?: Date
 updatedAt?: Date
@@ -101,7 +101,7 @@ const orderSchema = new mongoose.Schema<IOrder>({
        },
     status: {
         type: String,
-        enum: ["pending", "out of delivery", "delivered", "cancelled"],
+        enum: ["pending", "out for delivery", "delivered", "cancelled"],
         default: "pending"
     },
     cancelledAt: {
