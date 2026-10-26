@@ -1,13 +1,12 @@
 "use client"
 import { EyeIcon, EyeOff, Leaf, Loader2, Lock, LogIn, Mail } from 'lucide-react'
-import React, { useState } from 'react'
+import React, { useState, Suspense } from 'react'
 import { motion } from 'motion/react'
 import GoogleSignInButton from '@/components/GoogleSignInButton'
 import { signIn, useSession } from 'next-auth/react'
 import { useRouter , useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-
-function Login() {
+function LoginForm()  {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -137,6 +136,19 @@ router.refresh()
         <span className="text-green-600">Sign Up</span>
       </p>
     </div>
+  )
+}
+function Login() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-white text-green-700">
+          Loading login...
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   )
 }
 

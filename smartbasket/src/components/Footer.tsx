@@ -1,4 +1,3 @@
-
 'use client'
 
 import React from 'react'
@@ -117,7 +116,7 @@ function Footer() {
               <div>
                 <p className="font-medium text-white">Phone Number</p>
                 <a href="tel:+923001234567" className="transition hover:text-white">
-                  +92 300 1234567
+                  +92 3400551781
                 </a>
               </div>
             </li>
@@ -127,12 +126,12 @@ function Footer() {
               <div>
                 <p className="font-medium text-white">WhatsApp Support</p>
                 <a
-                  href="https://wa.me/923001234567"
+                  href="https://wa.me/923165447546"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="transition hover:text-white"
                 >
-                  +92 300 1234567
+                  +92 3165447546
                 </a>
               </div>
             </li>
